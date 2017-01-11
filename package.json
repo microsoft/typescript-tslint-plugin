@@ -1,0 +1,16 @@
+{
+  "name": "tslint-language-service",
+  "version": "1.0.0",
+  "description": "tslint - language services",
+  "main": "index.js",
+  "typings": "index.d.ts",
+  "author": "Angelo ZERR",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/angelozerr/tslint-language-service.git"
+  },
+  "dependencies": {
+  	"tslint": "4.3.1"
+  }
+}

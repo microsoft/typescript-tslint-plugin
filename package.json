@@ -2,8 +2,7 @@
   "name": "tslint-language-service",
   "version": "1.0.0",
   "description": "tslint - language services",
-  "main": "index.js",
-  "typings": "index.d.ts",
+  "main": "lib/index.js",
   "author": "Angelo ZERR",
   "license": "MIT",
   "repository": {

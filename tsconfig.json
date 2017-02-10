@@ -5,10 +5,8 @@
 		"module": "commonjs",
 		"moduleResolution": "node",
 		"allowSyntheticDefaultImports": true,
-		"sourceMap": true,		
-		"lib": [
-			"es6"
-		]
+		"sourceMap": true,
+		"outDir":"lib"
 	},
 	"exclude": [
 		"node_modules"

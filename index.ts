@@ -1,1 +1,0 @@
-export {create} from './src/ts_plugin';

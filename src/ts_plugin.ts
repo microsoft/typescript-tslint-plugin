@@ -19,8 +19,9 @@ interface Map<V> {
     [key: string]: V;
 }
 
-
 let codeFixActions: Map<Map<tslint.Fix>> = Object.create(null);
+
+let registeredCodeFixes = false;
 
 function computeKey(start: number, end: number): string {
     return `[${start},${end}]`;
@@ -75,12 +76,15 @@ export function create( info: any /* ts.server.PluginCreateInfo */ ): ts.Languag
         });
     }
 
-    let tsserver = info.ts;
-    function registerCodeFix(action: codefix.CodeFix) {
-        tsserver.codefix.registerCodeFix(action);
+    if (!registeredCodeFixes) {
+        let tsserver = info.ts;
+        function registerCodeFix(action: codefix.CodeFix) {
+            tsserver.codefix.registerCodeFix(action);
+        }
+        registerCodeFixes(registerCodeFix);
+        registeredCodeFixes = true;
     }
-    registerCodeFixes(registerCodeFix);
-
+    
     function recordCodeAction(problem: tslint.RuleFailure, file: ts.SourceFile) {
         let fix: tslint.Fix = null;
 

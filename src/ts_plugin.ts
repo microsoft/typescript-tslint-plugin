@@ -27,6 +27,39 @@ function computeKey(start: number, end: number): string {
     return `[${start},${end}]`;
 }
 
+let configFile: string = null;
+let configuration: tslint.Configuration.IConfigurationFile = null;
+let isTsLint4: boolean = true;
+
+let configCache = {
+    filePath: <string>null,
+    configuration: <any>null,
+    isDefaultConfig: false,
+    configFilePath: <string>null
+};
+
+let linter: typeof tslint.Linter = null;
+let linterConfiguration: typeof tslint.Configuration = null;
+
+let value = tslint;
+linter = value.Linter;
+linterConfiguration = value.Configuration;
+
+//isTsLint4 = isTsLintVersion4(linter);
+// connection.window.showInformationMessage(isTsLint4 ? 'tslint4': 'tslint3');
+
+if (!isTsLint4) {
+    //linter = value;
+}
+/*function isTsLintVersion4(linter) {
+    let version = '1.0.0';
+    try {
+        version = linter.VERSION;
+    } catch (e) {
+    }
+    return semver.satisfies(version, ">= 4.0.0 || >= 4.0.0-dev");
+}*/
+
 export function create( info: any /* ts.server.PluginCreateInfo */ ): ts.LanguageService {
     // Create the proxy
     const proxy: ts.LanguageService = Object.create( null );
@@ -76,8 +109,8 @@ export function create( info: any /* ts.server.PluginCreateInfo */ ): ts.Languag
         });
     }
 
-    if (!registeredCodeFixes) {
-        let tsserver = info.ts;
+    let tsserver = info.ts;
+    if (!registeredCodeFixes && tsserver && tsserver.codefix) {        
         function registerCodeFix(action: codefix.CodeFix) {
             tsserver.codefix.registerCodeFix(action);
         }
@@ -116,10 +149,37 @@ export function create( info: any /* ts.server.PluginCreateInfo */ ): ts.Languag
         tryOperation( 'get diagnostics', () => {
             info.project.projectService.logger.info( `Computing tslint semantic diagnostics...` );
             delete codeFixActions[fileName];
-            let linter = new tslint.Linter(options, oldLS.getProgram());
-            linter.lint(fileName, ""); // , source, configuration)
-            let result = linter.getResult();
-
+            
+            try {
+                configuration = getConfiguration(fileName, configFile);
+            } catch (err) {
+                // this should not happen since we guard against incorrect configurations
+                // showConfigurationFailure(conn, err);
+                return base;
+            }
+            
+            let result: tslint.LintResult;
+            try { // protect against tslint crashes
+                if (isTsLint4) {
+                    let tslint = new linter(options, oldLS.getProgram());
+                    tslint.lint(fileName, "", configuration);
+                    result = tslint.getResult();
+                }
+                // support for linting js files is only available in tslint > 4.0
+                /*else if (!isJsDocument(document)) {
+                    (<any>options).configuration = configuration;
+                    let tslint = new (<any>linter)(fsPath, contents, options);
+                    result = tslint.lint();
+                } else {
+                    return diagnostics;
+                }*/
+            } catch (err) {
+//                conn.console.info(getErrorMessage(err, document));
+//                connection.sendNotification(StatusNotification.type, { state: Status.error });
+//                return diagnostics;
+                return base;
+            }
+            
             if (result.failureCount > 0) {
                 const ours = filterProblemsForDocument(fileName, result.failures);
                 if ( ours && ours.length ) {
@@ -145,6 +205,7 @@ export function create( info: any /* ts.server.PluginCreateInfo */ ): ts.Languag
         if (documentFixes) {
             let fix = documentFixes[computeKey(start, end)];
             if (fix && fix.replacements) {
+                // Add tslint replacements codefix
                 const textChanges = fix.replacements.map(each => convertReplacementToTextChange(each));
                 base.push({
                     description: `Fix '${fix.ruleName}'`,
@@ -153,7 +214,18 @@ export function create( info: any /* ts.server.PluginCreateInfo */ ): ts.Languag
                         textChanges: textChanges
                     }]
                 });
+                // Add disable tslint rule codefix
             }
+        }
+        // Add "Go to rule definition" tslint.json codefix
+        if (configCache && configCache.configFilePath) {
+            base.push({
+                description: `Open tslint.json`,
+                changes: [{
+                    fileName: configCache.configFilePath,
+                    textChanges: []
+                }]
+            });
         }
         return base;
     };
@@ -166,6 +238,45 @@ function convertReplacementToTextChange(repl: tslint.Replacement): ts.TextChange
         newText: repl.text,
         span: {start: repl.start, length: repl.length}
     };
+}
+
+function getConfiguration(filePath: string, configFileName: string): any {
+    if (configCache.configuration && configCache.filePath === filePath) {
+        return configCache.configuration;
+    }
+
+    let isDefaultConfig = false;
+    let configuration;
+    let configFilePath = null;
+    if (isTsLint4) {
+        if (linterConfiguration.findConfigurationPath) {
+            isDefaultConfig = linterConfiguration.findConfigurationPath(configFileName, filePath) === undefined;
+        }
+        let configurationResult = linterConfiguration.findConfiguration(configFileName, filePath);
+
+        // between tslint 4.0.1 and tslint 4.0.2 the attribute 'error' has been removed from IConfigurationLoadResult
+        // in 4.0.2 findConfiguration throws an exception as in version ^3.0.0
+        if ((<any>configurationResult).error) {
+            throw (<any>configurationResult).error;
+        }
+        configuration = configurationResult.results;
+        configFilePath = configurationResult.path;
+    } else {
+        // prior to tslint 4.0 the findconfiguration functions where attached to the linter function
+        if (linter.findConfigurationPath) {
+            isDefaultConfig = linter.findConfigurationPath(configFileName, filePath) === undefined;
+        }
+        configuration = linter.findConfiguration(configFileName, filePath);
+        configFilePath = configuration.path;
+    }
+
+    configCache = {
+        filePath: filePath,
+        isDefaultConfig: isDefaultConfig,
+        configuration: configuration,
+        configFilePath : configFilePath
+    };
+    return configCache.configuration;
 }
 
 function registerCodeFixes(registerCodeFix: (action: codefix.CodeFix) => void) {

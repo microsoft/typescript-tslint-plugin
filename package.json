@@ -9,7 +9,18 @@
     "type": "git",
     "url": "https://github.com/angelozerr/tslint-language-service.git"
   },
-  "dependencies": {
-  	"tslint": "4.3.1"
+  "scripts": {
+    "build": "tsc --outDir lib src/*.ts",
+    "test": "tsc && tape .build/test/**/*.spec.js"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^7.0.8",
+    "@types/tape": "^4.2.29",
+    "tape": "^4.6.3"
+  },
+  "peerDependencies": {
+    "typescript": "2.2.x",
+    "tslint": "4.x"
   }
 }

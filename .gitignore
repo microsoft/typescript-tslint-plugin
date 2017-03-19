@@ -1,1 +1,10 @@
 .project
+
+# Dependencies
+node_modules
+
+# Intermediary compilation files
+.build
+
+# Deployment files
+lib

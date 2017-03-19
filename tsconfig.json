@@ -6,9 +6,10 @@
 		"moduleResolution": "node",
 		"allowSyntheticDefaultImports": true,
 		"sourceMap": true,
-		"outDir":"lib"
+		"outDir": ".build"
 	},
 	"exclude": [
+    "tmp",
 		"node_modules"
 	]
 }

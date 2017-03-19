@@ -1,1 +1,9 @@
-export {create} from './ts_plugin';
+import * as plugin from './ts_plugin';
+
+function factory() {
+  return plugin;
+};
+
+factory['create'] = plugin.create;
+
+export = factory;

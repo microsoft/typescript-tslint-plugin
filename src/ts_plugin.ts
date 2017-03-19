@@ -110,10 +110,12 @@ export function create( info: any /* ts.server.PluginCreateInfo */ ): ts.Languag
     }
 
     let tsserver = info.ts;
+
+    function registerCodeFix(action: codefix.CodeFix) {
+      return tsserver.codefix.registerCodeFix(action);
+    }
+
     if (!registeredCodeFixes && tsserver && tsserver.codefix) {        
-        function registerCodeFix(action: codefix.CodeFix) {
-            tsserver.codefix.registerCodeFix(action);
-        }
         registerCodeFixes(registerCodeFix);
         registeredCodeFixes = true;
     }

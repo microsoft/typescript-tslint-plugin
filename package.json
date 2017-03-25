@@ -10,6 +10,7 @@
     "url": "https://github.com/angelozerr/tslint-language-service.git"
   },
   "scripts": {
+    "publish": "node ./scripts/git-tag.js",
     "test": "tsc && tape .build/test/**/*.spec.js"
   },
   "dependencies": {},

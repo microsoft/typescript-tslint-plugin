@@ -1,0 +1,11 @@
+{
+  "name": "git-tag",
+  "license": "MIT",
+  "description": "A script creating a GitHub tag. Place in a 'scripts' directory under project root.",
+  "version": "0.0.1",
+  "main": "git-tag.js",
+  "devDependencies": {
+    "prompt": "~0.2.14",
+    "request": "~2.55.0"
+  }
+}

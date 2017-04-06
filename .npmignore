@@ -1,4 +1,4 @@
-.build/test
+out/test
 scripts
 src
 test

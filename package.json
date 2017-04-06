@@ -2,7 +2,7 @@
   "name": "tslint-language-service",
   "version": "0.2.0",
   "description": "tslint - language services",
-  "main": ".build/src/index.js",
+  "main": "out/src/index.js",
   "author": "Angelo ZERR",
   "license": "MIT",
   "repository": {
@@ -11,7 +11,7 @@
   },
   "scripts": {
     "publish": "node ./scripts/git-tag.js",
-    "test": "tsc && tape .build/test/**/*.spec.js"
+    "test": "tsc && tape out/test/**/*.spec.js"
   },
   "dependencies": {},
   "devDependencies": {

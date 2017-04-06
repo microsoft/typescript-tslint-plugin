@@ -1,4 +1,6 @@
 .build/test
+scripts
 src
 test
 .travis.yml
+.project

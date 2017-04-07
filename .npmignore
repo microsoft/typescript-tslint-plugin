@@ -1,6 +1,9 @@
 .npmignore
-scripts
-src
-test
+/scripts
+/src
+/test
+/out/test
+/out/src/*.map
+tsconfig.json
 .travis.yml
 .project

@@ -182,7 +182,7 @@ export function create( info: any /* ts.server.PluginCreateInfo */ ): ts.Languag
                 return base;
             }
             
-            if (result.failureCount > 0) {
+            if (result.failures.length > 0) {
                 const ours = filterProblemsForDocument(fileName, result.failures);
                 if ( ours && ours.length ) {
                   const file = oldLS.getProgram().getSourceFile( fileName );

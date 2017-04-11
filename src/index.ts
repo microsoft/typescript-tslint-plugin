@@ -1,6 +1,7 @@
 import * as plugin from './ts_plugin';
 
-function factory() {
+function factory(mod: { typescript: any /*typeof  ts*/ }) {
+  plugin.init(mod);
   return plugin;
 };
 

@@ -60,6 +60,11 @@ if (!isTsLint4) {
     return semver.satisfies(version, ">= 4.0.0 || >= 4.0.0-dev");
 }*/
 
+let typescript = null;
+export function init(mod: { typescript: any /*typeof  ts*/ }) {
+  typescript = mod.typescript;
+}
+
 export function create( info: any /* ts.server.PluginCreateInfo */ ): ts.LanguageService {
     // Create the proxy
     const proxy: ts.LanguageService = Object.create( null );
@@ -109,13 +114,11 @@ export function create( info: any /* ts.server.PluginCreateInfo */ ): ts.Languag
         });
     }
 
-    let tsserver = info.ts;
-
     function registerCodeFix(action: codefix.CodeFix) {
-      return tsserver.codefix.registerCodeFix(action);
+      return typescript.codefix.registerCodeFix(action);
     }
 
-    if (!registeredCodeFixes && tsserver && tsserver.codefix) {        
+    if (!registeredCodeFixes && typescript && typescript.codefix) {        
         registerCodeFixes(registerCodeFix);
         registeredCodeFixes = true;
     }
@@ -124,7 +127,7 @@ export function create( info: any /* ts.server.PluginCreateInfo */ ): ts.Languag
         let fix: tslint.Fix = null;
 
         // tslint can return a fix with an empty replacements array, these fixes are ignored
-        if (problem.getFix && problem.getFix() && problem.getFix().replacements.length > 0) { // tslint fixes are not available in tslint < 3.17
+        if (problem.getFix && problem.getFix() && problem.getFix().replacements && problem.getFix().replacements.length > 0) { // tslint fixes are not available in tslint < 3.17
             fix = problem.getFix(); // createAutoFix(problem, document, problem.getFix());
         }
 

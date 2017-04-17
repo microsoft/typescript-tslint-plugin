@@ -1,15 +1,11 @@
 {
-	"compileOnSave": true,
 	"compilerOptions": {
 		"target": "es5",
 		"module": "commonjs",
-		"moduleResolution": "node",
-		"allowSyntheticDefaultImports": true,
 		"sourceMap": true,
 		"outDir": "out"
 	},
 	"exclude": [
-    "tmp",
 		"node_modules"
 	]
 }

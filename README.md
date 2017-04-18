@@ -7,8 +7,8 @@ TypeScript `2.3` plugin for [tslint](https://github.com/palantir/tslint) which u
 
 To use it, 
 
- * `npm install tslint-language-service
- * in your `tsconfig.json` declare the use of the plugin:
+ * add in your `node_modules` this project
+ * declare in your `tsconfig.json` the plugin:
 
 ```json
 {
@@ -20,3 +20,5 @@ To use it,
 }
 ```
  
+ * execute tsserver with [tsserver-plugins](https://github.com/angelozerr/tsserver-plugins) by waiting for TypeScript 2.3
+

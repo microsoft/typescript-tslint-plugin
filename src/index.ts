@@ -47,14 +47,14 @@ const TSLINT_ERROR_CODE = 6999;
 
 function init(modules: { typescript: typeof ts_module }) {
   const ts = modules.typescript;
-
+  
   // By waiting for that TypeScript provides an API to register CodeFix
   // we define a registerCodeFix which uses the existing ts.codefix namespace.
   function registerCodeFix(action: codefix.CodeFix) {
-    return ts.codefix.registerCodeFix(action);
+    return (ts as any).codefix.registerCodeFix(action);
   }
 
-  if (!registeredCodeFixes && ts && ts.codefix) {        
+  if (!registeredCodeFixes && ts && (ts as any).codefix) {        
       registerCodeFixes(registerCodeFix);
       registeredCodeFixes = true;
   }

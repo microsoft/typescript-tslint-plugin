@@ -6,7 +6,8 @@ interface Map<V> {
     [key: string]: V;
 }
 
-let codeFixActions: Map<Map<tslint.Fix>> = Object.create(null);
+let codeFixActions: Map<Map<tslint.RuleFailure>> = Object.create(null);
+let registeredCodeFixes = false;
 
 function computeKey(start: number, end: number): string {
     return `[${start},${end}]`;
@@ -42,9 +43,32 @@ if (!isTsLint4) {
     return semver.satisfies(version, ">= 4.0.0 || >= 4.0.0-dev");
 }*/
 
+const TSLINT_ERROR_CODE = 6999;
+
 function init(modules: { typescript: typeof ts_module }) {
   const ts = modules.typescript;
 
+  // By waiting for that TypeScript provides an API to register CodeFix
+  // we define a registerCodeFix which uses the existing ts.codefix namespace.
+  function registerCodeFix(action: codefix.CodeFix) {
+    return ts.codefix.registerCodeFix(action);
+  }
+
+  if (!registeredCodeFixes && ts && ts.codefix) {        
+      registerCodeFixes(registerCodeFix);
+      registeredCodeFixes = true;
+  }
+  
+  function registerCodeFixes(registerCodeFix: (action: codefix.CodeFix) => void) {
+    // Code fix for tslint fixes
+    registerCodeFix({
+        errorCodes: [TSLINT_ERROR_CODE],
+        getCodeActions: (context: codefix.CodeFixContext) => {
+            return null;
+        }
+    });
+  }
+  
   function create(info: ts.server.PluginCreateInfo) {
 
     info.project.projectService.logger.info("tslint-language-service loaded");
@@ -77,8 +101,7 @@ function init(modules: { typescript: typeof ts_module }) {
             length: problem.getEndPosition().getPosition() - problem.getStartPosition().getPosition(),
             messageText: message,
             category: category,
-            //TODO we "steal"" an error code with a registered code fix. 2515 = implement inherited abstract class
-            code: 2515
+            code: TSLINT_ERROR_CODE
         };
         return diagnostic;
     }
@@ -99,22 +122,23 @@ function init(modules: { typescript: typeof ts_module }) {
         });
     }
 
-/* TODO only required for custom code actions
-    function registerCodeFix(action: codefix.CodeFix) {
-      return ts.codefix.registerCodeFix(action);
+    function replacementsAreEmpty(fix: tslint.Fix): boolean {
+      // in tslint 4 a Fix has a replacement property witht the Replacements
+      if ((<any>fix).replacements) {
+        return (<any>fix).replacements.length === 0;
+      }
+      // tslint 5
+      if (Array.isArray(fix)) {
+        return fix.length === 0;
+      }
+      return false;
     }
-
-    if (!registeredCodeFixes && ts && ts.codefix) {        
-        registerCodeFixes(registerCodeFix);
-        registeredCodeFixes = true;
-    }
-*/
 
     function recordCodeAction(problem: tslint.RuleFailure, file: ts.SourceFile) {
         let fix: tslint.Fix = null;
 
         // tslint can return a fix with an empty replacements array, these fixes are ignored
-        if (problem.getFix && problem.getFix() && problem.getFix().replacements && problem.getFix().replacements.length > 0) { // tslint fixes are not available in tslint < 3.17
+        if (problem.getFix && problem.getFix() && !replacementsAreEmpty(problem.getFix())) { // tslint fixes are not available in tslint < 3.17
             fix = problem.getFix(); // createAutoFix(problem, document, problem.getFix());
         }
 
@@ -122,12 +146,12 @@ function init(modules: { typescript: typeof ts_module }) {
             return;
         }
 
-        let documentAutoFixes: Map<tslint.Fix> = codeFixActions[file.fileName];
+        let documentAutoFixes: Map<tslint.RuleFailure> = codeFixActions[file.fileName];
         if (!documentAutoFixes) {
             documentAutoFixes = Object.create(null);
             codeFixActions[file.fileName] = documentAutoFixes;
         }
-        documentAutoFixes[computeKey(problem.getStartPosition().getPosition(), problem.getEndPosition().getPosition())] = fix;
+        documentAutoFixes[computeKey(problem.getStartPosition().getPosition(), problem.getEndPosition().getPosition())] = problem;
     }
 
     proxy.getSemanticDiagnostics = (fileName: string) => {
@@ -191,7 +215,7 @@ function init(modules: { typescript: typeof ts_module }) {
         }
         return prior;
     };
-
+    
     proxy.getCodeFixesAtPosition = function( fileName: string, start: number, end: number, errorCodes: number[] ): ts.CodeAction[] {
         let prior = oldLS.getCodeFixesAtPosition( fileName, start, end, errorCodes );
         if ( prior === undefined ) {
@@ -201,12 +225,27 @@ function init(modules: { typescript: typeof ts_module }) {
         let documentFixes = codeFixActions[fileName];
 
         if (documentFixes) {
-            let fix = documentFixes[computeKey(start, end)];
-            if (fix && fix.replacements) {
+            let problem = documentFixes[computeKey(start, end)];
+            if (problem) {
+                let fix = problem.getFix();
+                let replacements = null;
+                // in tslint4 a Fix has a replacement property with the Replacements
+                if (fix.replacements) {
+                  // tslint4
+                  replacements = fix.replacements;
+                } else {
+                  // in tslint 5 a Fix is a Replacement | Replacement[]                  
+                  if (!Array.isArray(fix)) {
+                    replacements = [fix];
+                  } else {
+                    replacements = fix;
+                  }
+                }
+            
                 // Add tslint replacements codefix
-                const textChanges = fix.replacements.map(each => convertReplacementToTextChange(each));
+                const textChanges = replacements.map(each => convertReplacementToTextChange(each));
                 prior.push({
-                    description: `Fix '${fix.ruleName}'`,
+                    description: `Fix '${problem.getRuleName()}'`,
                     changes: [{
                         fileName: fileName,
                         textChanges: textChanges
@@ -215,6 +254,16 @@ function init(modules: { typescript: typeof ts_module }) {
                 // Add disable tslint rule codefix
                 // TODO
             }
+        }
+        // Add "Go to rule definition" tslint.json codefix
+        if (configCache && configCache.configFilePath) {
+            prior.push({
+                description: `Open tslint.json`,
+                changes: [{
+                    fileName: configCache.configFilePath,
+                    textChanges: []
+                }]
+            });
         }
         return prior;
     };
@@ -270,4 +319,23 @@ function convertReplacementToTextChange(repl: tslint.Replacement): ts.TextChange
         newText: repl.text,
         span: {start: repl.start, length: repl.length}
     };
+}
+
+/* @internal */
+namespace codefix {
+
+    export interface CodeFix {
+        errorCodes: number[];
+        getCodeActions( context: CodeFixContext ): ts.CodeAction[] | undefined;
+    }
+
+    export interface CodeFixContext {
+        errorCode: number;
+        sourceFile: ts.SourceFile;
+        span: ts.TextSpan;
+        program: ts.Program;
+        newLineCharacter: string;
+        host: ts.LanguageServiceHost;
+        cancellationToken: ts.CancellationToken;
+    }
 }

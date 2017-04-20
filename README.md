@@ -32,10 +32,34 @@ Your `node_modules` folder should look like this:
   * tslint-language-service
   * typescript
  
-# Editor Support
+# Editors Support
  
-All editors which consummes tsserver (VSCode, Sublime, Eclipse, etc) can use `tslint-language-service`. Here a demo with [Eclipse](https://github.com/angelozerr/typescript.java) and `tslint 5.0.0`
+All editors which consumes tsserver (VSCode, Sublime, Eclipse, etc) can use `tslint-language-service`. Here a demo with [Eclipse](https://github.com/angelozerr/typescript.java) and `tslint 5.0.0`
 
 ![tslint demo](images/TslintLanguageServiceDemo.gif)
+
+## Eclipse
+
+Install [typescript.java](https://github.com/angelozerr/typescript.java/wiki/Installation-Update-Site) and you can use the `TypeScript Project wizard` which configures tslint-language-service.
+
+## VSCode
+
+- cd workspace folder
+- npm install tslint-language-service
+- npm install tslint@4.5.1  (peer dependency is defined as 4.x)
+- open the workspace folder in VS Code
+- disable vscode-tslint for the workspace
+- edit the tsconfig.json
+```json
+{
+    "compilerOptions": {
+        "plugins": [
+            {
+                "name": "tslint-language-service"
+            }
+        ]
+    }
+}
+```
  
 

@@ -43,7 +43,8 @@ if (!isTsLint4) {
     return semver.satisfies(version, ">= 4.0.0 || >= 4.0.0-dev");
 }*/
 
-const TSLINT_ERROR_CODE = 6999;
+//TODO we "steal"" an error code with a registered code fix. 2515 = implement inherited abstract class
+const TSLINT_ERROR_CODE = 2515;
 
 function init(modules: { typescript: typeof ts_module }) {
   const ts = modules.typescript;
@@ -256,7 +257,10 @@ function init(modules: { typescript: typeof ts_module }) {
             }
         }
         // Add "Go to rule definition" tslint.json codefix
-        if (configCache && configCache.configFilePath) {
+        /* Comment this codefix, because it doesn't work with VSCode because textChanges is empty.
+           Hope one day https://github.com/angelozerr/tslint-language-service/issues/4 will be supported.
+             
+           if (configCache && configCache.configFilePath) {
             prior.push({
                 description: `Open tslint.json`,
                 changes: [{
@@ -264,7 +268,7 @@ function init(modules: { typescript: typeof ts_module }) {
                     textChanges: []
                 }]
             });
-        }
+        }*/
         return prior;
     };
     return proxy;

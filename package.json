@@ -1,6 +1,6 @@
 {
   "name": "tslint-language-service",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "tslint - language services",
   "main": "out/src/index.js",
   "author": "Angelo ZERR",

@@ -252,8 +252,20 @@ function init(modules: { typescript: typeof ts_module }) {
                         textChanges: textChanges
                     }]
                 });
+                const file = oldLS.getProgram().getSourceFile( fileName );
+                file.pos
                 // Add disable tslint rule codefix
-                // TODO
+                prior.push( {
+                  description: `Disable rule '${problem.getRuleName()}'`,
+                  changes: [{
+                    fileName: fileName,
+                    textChanges: [{
+                      newText: `// tslint:disable-next-line:${problem.getRuleName()}\n`,
+                      span: { start: file.getLineStarts()[problem.getStartPosition().getLineAndCharacter().line], length: 0}
+                    }
+                    ]
+                  }]
+              });
             }
         }
         // Add "Go to rule definition" tslint.json codefix

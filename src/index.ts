@@ -217,8 +217,8 @@ function init(modules: { typescript: typeof ts_module }) {
         return prior;
     };
     
-    proxy.getCodeFixesAtPosition = function( fileName: string, start: number, end: number, errorCodes: number[] ): ts.CodeAction[] {
-        let prior = oldLS.getCodeFixesAtPosition( fileName, start, end, errorCodes );
+    proxy.getCodeFixesAtPosition = function( fileName: string, start: number, end: number, errorCodes: number[], formatOptions: ts.FormatCodeSettings ): ts.CodeAction[] {
+        let prior = oldLS.getCodeFixesAtPosition( fileName, start, end, errorCodes, formatOptions );
         if ( prior === undefined ) {
             prior = [];
         }
@@ -253,7 +253,6 @@ function init(modules: { typescript: typeof ts_module }) {
                     }]
                 });
                 const file = oldLS.getProgram().getSourceFile( fileName );
-                file.pos
                 // Add disable tslint rule codefix
                 prior.push( {
                   description: `Disable rule '${problem.getRuleName()}'`,

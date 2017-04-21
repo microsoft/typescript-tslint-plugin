@@ -20,7 +20,7 @@
     "@types/tape": "^4.2.29",
     "tape": "^4.6.3",
     "tslint": "^4.5.1",
-    "typescript": "^2.2.1"
+    "typescript": "^2.3.0"
   },
   "peerDependencies": {
     "typescript": "2.2.x",

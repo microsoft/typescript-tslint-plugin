@@ -102,6 +102,7 @@ function init(modules: { typescript: typeof ts_module }) {
             length: problem.getEndPosition().getPosition() - problem.getStartPosition().getPosition(),
             messageText: message,
             category: category,
+            source: 'tslint',
             code: TSLINT_ERROR_CODE
         };
         return diagnostic;

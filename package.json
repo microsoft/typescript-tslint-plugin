@@ -24,6 +24,6 @@
   },
   "peerDependencies": {
     "typescript": "2.2.x",
-    "tslint": "4.x"
+    "tslint": ">= 4 < 6"
   }
 }

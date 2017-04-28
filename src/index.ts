@@ -2,11 +2,7 @@ import * as ts_module from "../node_modules/typescript/lib/tsserverlibrary";
 import * as tslint from 'tslint';
 import * as path from 'path';
 
-interface Map<V> {
-    [key: string]: V;
-}
-
-let codeFixActions: Map<Map<tslint.RuleFailure>> = Object.create(null);
+let codeFixActions = new Map<string, Map<string, tslint.RuleFailure>>();
 let registeredCodeFixes = false;
 
 function computeKey(start: number, end: number): string {
@@ -148,7 +144,7 @@ function init(modules: { typescript: typeof ts_module }) {
             return;
         }
 
-        let documentAutoFixes: Map<tslint.RuleFailure> = codeFixActions[file.fileName];
+        let documentAutoFixes: Map<string, tslint.RuleFailure> = codeFixActions[file.fileName];
         if (!documentAutoFixes) {
             documentAutoFixes = Object.create(null);
             codeFixActions[file.fileName] = documentAutoFixes;
@@ -193,7 +189,7 @@ function init(modules: { typescript: typeof ts_module }) {
                     return diagnostics;
                 }*/
             } catch (err) {
-	            let errorMessage = `unknown error`;
+                let errorMessage = `unknown error`;
                 if (typeof err.message === 'string' || err.message instanceof String) {
                     errorMessage = <string>err.message;
                 }
@@ -311,6 +307,17 @@ function getConfiguration(filePath: string, configFileName: string): any {
             throw (<any>configurationResult).error;
         }
         configuration = configurationResult.results;
+        // In tslint version 5 the 'no-unused-variable' rules breaks the TypeScript language service plugin.
+        // See https://github.com/Microsoft/TypeScript/issues/15344
+        // Therefore we remove the rule from the configuration.
+        // In tslint 5 the rules are stored in a Map, in earlier versions they were stored in an Object
+        if (configuration.rules && configuration.rules instanceof Map) {
+            configuration.rules.delete('no-unused-variable');
+        }
+        if (configuration.jsRules && configuration.jsRules instanceof Map) {
+            configuration.jsRules.delete('no-unused-variable');
+        }
+        
         configFilePath = configurationResult.path;
     } else {
         // prior to tslint 4.0 the findconfiguration functions where attached to the linter function

@@ -44,9 +44,16 @@ Install [typescript.java](https://github.com/angelozerr/typescript.java/wiki/Ins
 
 ## VSCode
 
-If you are using the `vscode-tslint` extension disable or uninstall it.
+Visual Studio code provides a [vscode-tslint](https://marketplace.visualstudio.com/items?itemName=eg2.tslint) extension, to avoid that the a file is linted twice you should disable this extension.
 
-Install the `tslint-language-service` and `tslint` as described above into your workspace.
+The most important differences between the `vscode-tslint` extension and the `tslint-languageservice-plugin` are:
+- the plugin shares the program representation with TypeScript. This is more efficient than the `vscode-tslint` extension which needs 
+  to reanalyze the document. Since `vscode-tslint` lints one file a time only, it cannot support tslint rules that require the type checker. The language service plugin doesn't have this limitation.
+- `vscode-tslint` provides additional [features](https://marketplace.visualstudio.com/items?itemName=eg2.tslint), please file issue requests for the features you are missing.
+
+To use the plugin with VS Code:
+- If you are using the `vscode-tslint` extension disable or uninstall it.
+- Install the `tslint-language-service` and `tslint` as described above into your workspace.
 
 ![tslint demo VS Code](images/TslintLanguageServiceDemoVSCode.gif)
 

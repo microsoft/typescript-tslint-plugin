@@ -53,8 +53,13 @@ The most important differences between the `vscode-tslint` extension and the `ts
 
 To use the plugin with VS Code:
 - If you are using the `vscode-tslint` extension disable or uninstall it.
-- Install the `tslint-language-service` and `tslint` as described above into your workspace.
+- Install `typescript`, the `tslint-language-service`, and `tslint` into your workspace using `npm install typescript tslint tslint-language-service`.
+- Open VS Code on the workspace
+- Switch to the Typescript version that is installed locally in the workspace using the version switcher (see below) in the bottom right of the status bar.
 
+![ts version switcher](images/ts-switcher.png)
+
+### Demo
 ![tslint demo VS Code](images/TslintLanguageServiceDemoVSCode.gif)
 
 

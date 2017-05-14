@@ -28,11 +28,10 @@ linterConfiguration = value.Configuration;
 
 // helper to detect whether we are on an older version than tslint4 
 function isAtLeastTSLintV4():boolean {
-    // in older versions of tslint the function #findConfigurationPath was available on the `linter` function
-    if (linter.findConfigurationPath) {
-        return false;
+    if (linterConfiguration) {
+        return true;
     }
-    return true;
+    return false;
 }
 
 //TODO we "steal"" an error code with a registered code fix. 2515 = implement inherited abstract class
@@ -142,7 +141,7 @@ function init(modules: { typescript: typeof ts_module }) {
 
         let documentAutoFixes: Map<string, tslint.RuleFailure> = codeFixActions.get(file.fileName);
         if (!documentAutoFixes) {
-            documentAutoFixes = Object.create(null);
+            documentAutoFixes = new Map<string, tslint.RuleFailure>();
             codeFixActions.set(file.fileName, documentAutoFixes);
         }
         documentAutoFixes.set(computeKey(problem.getStartPosition().getPosition(), problem.getEndPosition().getPosition()), problem);

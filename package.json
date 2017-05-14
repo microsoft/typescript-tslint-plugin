@@ -13,7 +13,8 @@
     "prepublish": "tsc",
     "compile": "node node_modules/typescript/lib/tsc",
     "publish": "node ./scripts/git-tag.js",
-    "test": "tsc && tape out/test/**/*.spec.js"
+    "test": "tsc && tape out/test/**/*.spec.js",
+    "lint": "tslint src/index.ts"
   },
   "dependencies": {},
   "devDependencies": {

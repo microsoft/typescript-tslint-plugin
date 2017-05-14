@@ -19,6 +19,11 @@ let configCache = {
     configFilePath: <string>null
 };
 
+interface Settings {
+    alwaysShowRuleFailuresAsWarnings?: boolean;
+    ignoreDefinitionFiles?: boolean;
+}
+
 //TODO we "steal"" an error code with a registered code fix. 2515 = implement inherited abstract class
 const TSLINT_ERROR_CODE = 2515;
 
@@ -49,6 +54,7 @@ function init(modules: { typescript: typeof ts_module }) {
   function create(info: ts.server.PluginCreateInfo) {
 
     info.project.projectService.logger.info("tslint-language-service loaded");
+    let config:Settings = info.config;
 
     // Set up decorator
     const proxy = Object.create(null) as ts.LanguageService;
@@ -64,9 +70,11 @@ function init(modules: { typescript: typeof ts_module }) {
             ? `${problem.getFailure()} (${problem.getRuleName()})`
             : `${problem.getFailure()}`;
 
-        // tslint5 supports to assign severities to rules
         let category;
-        if ((<any>problem).getRuleSeverity && (<any>problem).getRuleSeverity() === 'error') { 
+        if (config.alwaysShowRuleFailuresAsWarnings === true) {
+            category = ts.DiagnosticCategory.Warning;
+        } else if ((<any>problem).getRuleSeverity && (<any>problem).getRuleSeverity() === 'error') { 
+            // tslint5 supports to assign severities to rules
             category = ts.DiagnosticCategory.Error;
         } else {
             category = ts.DiagnosticCategory.Warning;
@@ -144,6 +152,10 @@ function init(modules: { typescript: typeof ts_module }) {
                 codeFixActions.delete(fileName);
             } 
             
+            if (config.ignoreDefinitionFiles === true && fileName.endsWith('.d.ts')) {
+                return prior;
+            }
+
             try {
                 configuration = getConfiguration(fileName, configFile);
             } catch (err) {

@@ -4,6 +4,9 @@
 		"module": "commonjs",
 		"sourceMap": true,
 		"outDir": "out",
+		"noImplicitAny": true,
+		"noUnusedParameters": true,
+		"noUnusedLocals": true,
 		"lib": ["es6"]
 	},
 	"exclude": [

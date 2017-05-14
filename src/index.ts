@@ -60,7 +60,7 @@ function init(modules: { typescript: typeof ts_module }) {
     // Code fix for tslint fixes
     registerCodeFix({
         errorCodes: [TSLINT_ERROR_CODE],
-        getCodeActions: (context: codefix.CodeFixContext) => {
+        getCodeActions: (_context: any) => {
             return null;
         }
     });
@@ -75,7 +75,7 @@ function init(modules: { typescript: typeof ts_module }) {
     const oldLS = info.languageService;
     for (const k in oldLS) {
       (<any>proxy)[k] = function () {
-        return oldLS[k].apply(oldLS, arguments);
+        return (<any>oldLS)[k].apply(oldLS, arguments);
       }
     }
 
@@ -110,13 +110,13 @@ function init(modules: { typescript: typeof ts_module }) {
     function filterProblemsForDocument(documentPath: string, failures: tslint.RuleFailure[]): tslint.RuleFailure[] {
         let normalizedPath = path.normalize(documentPath);
         // we only show diagnostics targetting this open document, some tslint rule return diagnostics for other documents/files
-        let normalizedFiles = {};
+        let normalizedFiles = new Map<string, string>();
         return failures.filter(each => {
             let fileName = each.getFileName();
-            if (!normalizedFiles[fileName]) {
-                normalizedFiles[fileName] = path.normalize(fileName);
+            if (!normalizedFiles.has(fileName)) {
+                normalizedFiles.set(fileName, path.normalize(fileName));
             }
-            return normalizedFiles[fileName] === normalizedPath;
+            return normalizedFiles.get(fileName) === normalizedPath;
         });
     }
 
@@ -144,12 +144,12 @@ function init(modules: { typescript: typeof ts_module }) {
             return;
         }
 
-        let documentAutoFixes: Map<string, tslint.RuleFailure> = codeFixActions[file.fileName];
+        let documentAutoFixes: Map<string, tslint.RuleFailure> = codeFixActions.get(file.fileName);
         if (!documentAutoFixes) {
             documentAutoFixes = Object.create(null);
-            codeFixActions[file.fileName] = documentAutoFixes;
+            codeFixActions.set(file.fileName, documentAutoFixes);
         }
-        documentAutoFixes[computeKey(problem.getStartPosition().getPosition(), problem.getEndPosition().getPosition())] = problem;
+        documentAutoFixes.set(computeKey(problem.getStartPosition().getPosition(), problem.getEndPosition().getPosition()), problem);
     }
 
     proxy.getSemanticDiagnostics = (fileName: string) => {
@@ -160,7 +160,9 @@ function init(modules: { typescript: typeof ts_module }) {
 
         try {
             info.project.projectService.logger.info( `Computing tslint semantic diagnostics...` );
-            delete codeFixActions[fileName]; 
+            if (codeFixActions.has(fileName)) {
+                codeFixActions.delete(fileName);
+            } 
             
             try {
                 configuration = getConfiguration(fileName, configFile);
@@ -220,17 +222,17 @@ function init(modules: { typescript: typeof ts_module }) {
             prior = [];
         }
         info.project.projectService.logger.info("tslint-language-service getCodeFixes " + errorCodes[0] );
-        let documentFixes = codeFixActions[fileName];
+        let documentFixes = codeFixActions.get(fileName);
 
         if (documentFixes) {
-            let problem = documentFixes[computeKey(start, end)];
+            let problem = documentFixes.get(computeKey(start, end));
             if (problem) {
                 let fix = problem.getFix();
-                let replacements = null;
+                let replacements:tslint.Replacement[] = null;
                 // in tslint4 a Fix has a replacement property with the Replacements
-                if (fix.replacements) {
+                if ((<any>fix).replacements) {
                   // tslint4
-                  replacements = fix.replacements;
+                  replacements = (<any>fix).replacements;
                 } else {
                   // in tslint 5 a Fix is a Replacement | Replacement[]                  
                   if (!Array.isArray(fix)) {
@@ -349,16 +351,6 @@ namespace codefix {
 
     export interface CodeFix {
         errorCodes: number[];
-        getCodeActions( context: CodeFixContext ): ts.CodeAction[] | undefined;
-    }
-
-    export interface CodeFixContext {
-        errorCode: number;
-        sourceFile: ts.SourceFile;
-        span: ts.TextSpan;
-        program: ts.Program;
-        newLineCharacter: string;
-        host: ts.LanguageServiceHost;
-        cancellationToken: ts.CancellationToken;
+        getCodeActions( context: any ): ts.CodeAction[] | undefined;
     }
 }

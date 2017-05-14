@@ -27,12 +27,12 @@ linter = value.Linter;
 linterConfiguration = value.Configuration;
 
 // helper to detect whether we are on an older version than tslint4 
-function isTSLintOlderV4():boolean {
+function isAtLeastTSLintV4():boolean {
     // in older versions of tslint the function #findConfigurationPath was available on the `linter` function
     if (linter.findConfigurationPath) {
-        return true;
+        return false;
     }
-    return false;
+    return true;
 }
 
 //TODO we "steal"" an error code with a registered code fix. 2515 = implement inherited abstract class
@@ -172,22 +172,22 @@ function init(modules: { typescript: typeof ts_module }) {
             try { // protect against tslint crashes
 
                 // check whether we are on tslint > version 4. TSLint 4 added a function tslint.getResult()
-                if (!isTSLintOlderV4()) { 
+                if (isAtLeastTSLintV4()) { 
                     // TODO the types of the Program provided by tsserver libary are not compatible with the one provided by typescript
                     // casting away the type
                     let options: tslint.ILinterOptions = {fix: false};
                     let tslint = new linter(options, <any>oldLS.getProgram());
                     tslint.lint(fileName, "", configuration);
                     result = tslint.getResult();
-                }
-                // support for linting js files is only available in tslint > 4.0
-                /*else if (!isJsDocument(document)) {
-                    (<any>options).configuration = configuration;
-                    let tslint = new (<any>linter)(fsPath, contents, options);
+                } else { // tslint < 4.0
+                    if (fileName.split('.').pop() !== 'ts') { // only tslint > 4.0 can lint JS
+                        return prior;
+                    }
+                    // invoke lint the < 4.0 way
+                    let contents = (<any>oldLS).getProgram().getSourceFile().getFullText();
+                    let tslint = new (<any>linter)(fileName, contents, configuration);
                     result = tslint.lint();
-                } else {
-                    return diagnostics;
-                }*/
+                }
             } catch (err) {
                 let errorMessage = `unknown error`;
                 if (typeof err.message === 'string' || err.message instanceof String) {
@@ -296,7 +296,7 @@ function getConfiguration(filePath: string, configFileName: string): any {
     let configuration;
     let configFilePath = null;
 
-    if (!isTSLintOlderV4()) {
+    if (isAtLeastTSLintV4()) {
         if (linterConfiguration.findConfigurationPath) {
             isDefaultConfig = linterConfiguration.findConfigurationPath(configFileName, filePath) === undefined;
         }

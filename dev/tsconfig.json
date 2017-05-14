@@ -3,6 +3,7 @@
         "plugins": [
             {
                 "name": "tslint-language-service",
+                //"configFile": "../tslint.json",
                 "alwaysShowRuleFailuresAsWarnings": false,
                 "ignoreDefinitionFiles": true
             }

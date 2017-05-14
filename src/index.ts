@@ -5,13 +5,6 @@ import * as path from 'path';
 let codeFixActions = new Map<string, Map<string, tslint.RuleFailure>>();
 let registeredCodeFixes = false;
 
-function computeKey(start: number, end: number): string {
-    return `[${start},${end}]`;
-}
-
-let configFile: string = null;
-let configuration: tslint.Configuration.IConfigurationFile = null;
-
 let configCache = {
     filePath: <string>null,
     configuration: <any>null,
@@ -22,6 +15,7 @@ let configCache = {
 interface Settings {
     alwaysShowRuleFailuresAsWarnings?: boolean;
     ignoreDefinitionFiles?: boolean;
+    configFile?: string;
 }
 
 //TODO we "steal"" an error code with a registered code fix. 2515 = implement inherited abstract class
@@ -55,6 +49,7 @@ function init(modules: { typescript: typeof ts_module }) {
 
     info.project.projectService.logger.info("tslint-language-service loaded");
     let config:Settings = info.config;
+    let configuration: tslint.Configuration.IConfigurationFile = null;
 
     // Set up decorator
     const proxy = Object.create(null) as ts.LanguageService;
@@ -63,6 +58,10 @@ function init(modules: { typescript: typeof ts_module }) {
       (<any>proxy)[k] = function () {
         return (<any>oldLS)[k].apply(oldLS, arguments);
       }
+    }
+
+    function computeKey(start: number, end: number): string {
+        return `[${start},${end}]`;
     }
 
     function makeDiagnostic(problem: tslint.RuleFailure, file: ts.SourceFile): ts.Diagnostic {
@@ -157,7 +156,7 @@ function init(modules: { typescript: typeof ts_module }) {
             }
 
             try {
-                configuration = getConfiguration(fileName, configFile);
+                configuration = getConfiguration(fileName, config.configFile);
             } catch (err) {
                 // this should not happen since we guard against incorrect configurations
                 // showConfigurationFailure(conn, err);

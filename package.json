@@ -10,6 +10,7 @@
     "url": "https://github.com/angelozerr/tslint-language-service.git"
   },
   "scripts": {
+    "prepublish": "tsc",
     "compile": "node node_modules/typescript/lib/tsc",
     "publish": "node ./scripts/git-tag.js",
     "test": "tsc && tape out/test/**/*.spec.js"
@@ -19,8 +20,8 @@
     "@types/node": "^7.0.8",
     "@types/tape": "^4.2.29",
     "tape": "^4.6.3",
-    "tslint": "^4.5.1",
-    "typescript": "^2.3.1"
+    "tslint": "^5.2.0",
+    "typescript": "^2.3.2"
   },
   "peerDependencies": {
     "typescript": ">= 2.3.1 < 3",

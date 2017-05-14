@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "plugins": [
+            {
+                "name": "tslint-language-service"
+            }
+        ],
+        "module": "commonjs",
+        "target": "es5",
+        "allowJs": true,
+        "noImplicitAny": false,
+        "sourceMap": false
+    }
+}

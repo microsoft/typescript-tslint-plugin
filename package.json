@@ -12,6 +12,7 @@
   "scripts": {
     "prepublish": "tsc",
     "compile": "node node_modules/typescript/lib/tsc",
+    "devtest": "tsc && copyfiles out/src/index.js dev/node_modules/tslint-language-service",
     "publish": "node ./scripts/git-tag.js",
     "test": "tsc && tape out/test/**/*.spec.js",
     "lint": "tslint src/index.ts"
@@ -22,7 +23,8 @@
     "@types/tape": "^4.2.29",
     "tape": "^4.6.3",
     "tslint": "^5.2.0",
-    "typescript": "^2.3.2"
+    "typescript": "^2.3.2",
+    "copyfiles": "^1.2.0"
   },
   "peerDependencies": {
     "typescript": ">= 2.3.1 < 3",

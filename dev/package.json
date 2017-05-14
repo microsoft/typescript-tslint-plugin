@@ -1,0 +1,11 @@
+{
+  "name": "dev",
+  "version": "1.0.0",
+  "description": "development setup",
+  "main": "test-javascript.js",
+  "devDependencies": {
+    "tslint": "^5.2.0",
+    "typescript": "^2.3.2",
+    "tslint-language-service": "^0.9.4"
+  }
+}

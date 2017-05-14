@@ -11,7 +11,6 @@ function computeKey(start: number, end: number): string {
 
 let configFile: string = null;
 let configuration: tslint.Configuration.IConfigurationFile = null;
-let isTsLint4: boolean = true;
 
 let configCache = {
     filePath: <string>null,
@@ -27,17 +26,14 @@ let value = tslint;
 linter = value.Linter;
 linterConfiguration = value.Configuration;
 
-if (!isTsLint4) {
-    //linter = value;
-}
-/*function isTsLintVersion4(linter) {
-    let version = '1.0.0';
-    try {
-        version = linter.VERSION;
-    } catch (e) {
+// helper to detect whether we are on an older version than tslint4 
+function isTSLintOlderV4():boolean {
+    // in older versions of tslint the function #findConfigurationPath was available on the `linter` function
+    if (linter.findConfigurationPath) {
+        return true;
     }
-    return semver.satisfies(version, ">= 4.0.0 || >= 4.0.0-dev");
-}*/
+    return false;
+}
 
 //TODO we "steal"" an error code with a registered code fix. 2515 = implement inherited abstract class
 const TSLINT_ERROR_CODE = 2515;
@@ -174,7 +170,9 @@ function init(modules: { typescript: typeof ts_module }) {
             
             let result: tslint.LintResult;
             try { // protect against tslint crashes
-                if (isTsLint4) {
+
+                // check whether we are on tslint > version 4. TSLint 4 added a function tslint.getResult()
+                if (!isTSLintOlderV4()) { 
                     // TODO the types of the Program provided by tsserver libary are not compatible with the one provided by typescript
                     // casting away the type
                     let options: tslint.ILinterOptions = {fix: false};
@@ -297,7 +295,8 @@ function getConfiguration(filePath: string, configFileName: string): any {
     let isDefaultConfig = false;
     let configuration;
     let configFilePath = null;
-    if (isTsLint4) {
+
+    if (!isTSLintOlderV4()) {
         if (linterConfiguration.findConfigurationPath) {
             isDefaultConfig = linterConfiguration.findConfigurationPath(configFileName, filePath) === undefined;
         }
@@ -321,8 +320,7 @@ function getConfiguration(filePath: string, configFileName: string): any {
         }
         
         configFilePath = configurationResult.path;
-    } else {
-        // prior to tslint 4.0 the findconfiguration functions where attached to the linter function
+    } else {  // prior tslint 4.0
         if (linter.findConfigurationPath) {
             isDefaultConfig = linter.findConfigurationPath(configFileName, filePath) === undefined;
         }

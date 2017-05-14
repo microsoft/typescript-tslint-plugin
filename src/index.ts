@@ -19,21 +19,6 @@ let configCache = {
     configFilePath: <string>null
 };
 
-let linter: typeof tslint.Linter = null;
-let linterConfiguration: typeof tslint.Configuration = null;
-
-let value = tslint;
-linter = value.Linter;
-linterConfiguration = value.Configuration;
-
-// helper to detect whether we are on an older version than tslint4 
-function isAtLeastTSLintV4():boolean {
-    if (linterConfiguration) {
-        return true;
-    }
-    return false;
-}
-
 //TODO we "steal"" an error code with a registered code fix. 2515 = implement inherited abstract class
 const TSLINT_ERROR_CODE = 2515;
 
@@ -169,24 +154,12 @@ function init(modules: { typescript: typeof ts_module }) {
             
             let result: tslint.LintResult;
             try { // protect against tslint crashes
-
-                // check whether we are on tslint > version 4. TSLint 4 added a function tslint.getResult()
-                if (isAtLeastTSLintV4()) { 
-                    // TODO the types of the Program provided by tsserver libary are not compatible with the one provided by typescript
-                    // casting away the type
-                    let options: tslint.ILinterOptions = {fix: false};
-                    let tslint = new linter(options, <any>oldLS.getProgram());
-                    tslint.lint(fileName, "", configuration);
-                    result = tslint.getResult();
-                } else { // tslint < 4.0
-                    if (fileName.split('.').pop() !== 'ts') { // only tslint > 4.0 can lint JS
-                        return prior;
-                    }
-                    // invoke lint the < 4.0 way
-                    let contents = (<any>oldLS).getProgram().getSourceFile().getFullText();
-                    let tslint = new (<any>linter)(fileName, contents, configuration);
-                    result = tslint.lint();
-                }
+                // TODO the types of the Program provided by tsserver libary are not compatible with the one provided by typescript
+                // casting away the type
+                let options: tslint.ILinterOptions = {fix: false};
+                let linter = new tslint.Linter(options, <any>oldLS.getProgram());
+                linter.lint(fileName, "", configuration);
+                result = linter.getResult();
             } catch (err) {
                 let errorMessage = `unknown error`;
                 if (typeof err.message === 'string' || err.message instanceof String) {
@@ -295,37 +268,27 @@ function getConfiguration(filePath: string, configFileName: string): any {
     let configuration;
     let configFilePath = null;
 
-    if (isAtLeastTSLintV4()) {
-        if (linterConfiguration.findConfigurationPath) {
-            isDefaultConfig = linterConfiguration.findConfigurationPath(configFileName, filePath) === undefined;
-        }
-        let configurationResult = linterConfiguration.findConfiguration(configFileName, filePath);
+    isDefaultConfig = tslint.Configuration.findConfigurationPath(configFileName, filePath) === undefined;
+    let configurationResult = tslint.Configuration.findConfiguration(configFileName, filePath);
 
-        // between tslint 4.0.1 and tslint 4.0.2 the attribute 'error' has been removed from IConfigurationLoadResult
-        // in 4.0.2 findConfiguration throws an exception as in version ^3.0.0
-        if ((<any>configurationResult).error) {
-            throw (<any>configurationResult).error;
-        }
-        configuration = configurationResult.results;
-        // In tslint version 5 the 'no-unused-variable' rules breaks the TypeScript language service plugin.
-        // See https://github.com/Microsoft/TypeScript/issues/15344
-        // Therefore we remove the rule from the configuration.
-        // In tslint 5 the rules are stored in a Map, in earlier versions they were stored in an Object
-        if (configuration.rules && configuration.rules instanceof Map) {
-            configuration.rules.delete('no-unused-variable');
-        }
-        if (configuration.jsRules && configuration.jsRules instanceof Map) {
-            configuration.jsRules.delete('no-unused-variable');
-        }
+    // between tslint 4.0.1 and tslint 4.0.2 the attribute 'error' has been removed from IConfigurationLoadResult
+    // in 4.0.2 findConfiguration throws an exception as in version ^3.0.0
+    if ((<any>configurationResult).error) {
+        throw (<any>configurationResult).error;
+    }
+    configuration = configurationResult.results;
+    // In tslint version 5 the 'no-unused-variable' rules breaks the TypeScript language service plugin.
+    // See https://github.com/Microsoft/TypeScript/issues/15344
+    // Therefore we remove the rule from the configuration.
+    // In tslint 5 the rules are stored in a Map, in earlier versions they were stored in an Object
+    if (configuration.rules && configuration.rules instanceof Map) {
+        configuration.rules.delete('no-unused-variable');
+    }
+    if (configuration.jsRules && configuration.jsRules instanceof Map) {
+        configuration.jsRules.delete('no-unused-variable');
+    }
         
         configFilePath = configurationResult.path;
-    } else {  // prior tslint 4.0
-        if (linter.findConfigurationPath) {
-            isDefaultConfig = linter.findConfigurationPath(configFileName, filePath) === undefined;
-        }
-        configuration = linter.findConfiguration(configFileName, filePath);
-        configFilePath = configuration.path;
-    }
 
     configCache = {
         filePath: filePath,

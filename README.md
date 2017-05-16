@@ -42,20 +42,21 @@ All editors which consumes tsserver (VSCode, Sublime, Eclipse, etc) can use `tsl
 
 Install [typescript.java](https://github.com/angelozerr/typescript.java/wiki/Installation-Update-Site) and you can use the `TypeScript Project wizard` which configures tslint-language-service.
 
-## VSCode
+## Visual Studio Code
 
-Visual Studio code provides a [vscode-tslint](https://marketplace.visualstudio.com/items?itemName=eg2.tslint) extension, to avoid that the a file is linted twice you should disable this extension.
-
-The most important differences between the `vscode-tslint` extension and the `tslint-languageservice-plugin` are:
-- the plugin shares the program representation with TypeScript. This is more efficient than the `vscode-tslint` extension which needs 
-  to reanalyze the document. Since `vscode-tslint` lints one file a time only, it cannot support tslint rules that require the type checker. The language service plugin doesn't have this limitation.
-- `vscode-tslint` provides additional [features](https://marketplace.visualstudio.com/items?itemName=eg2.tslint), please file issue requests for the features you are missing.
+*If you also have the [vscode-tslint](https://marketplace.visualstudio.com/items?itemName=eg2.tslint) extension in VS Code installed, please disable it to avoid that files are linted twice.*
 
 To use the plugin with VS Code:
 - If you are using the `vscode-tslint` extension disable or uninstall it.
 - Install `typescript`, the `tslint-language-service`, and `tslint` into your workspace using `npm install typescript tslint tslint-language-service`.
 - Open VS Code on the workspace
 - Switch to the Typescript version that is installed locally in the workspace using the version switcher (see below) in the bottom right of the status bar.
+
+The most important differences between the `vscode-tslint` extension and the `tslint-languageservice-plugin` are:
+- The plugin shares the program representation with TypeScript. This is more efficient than the `vscode-tslint` extension which needs 
+  to reanalyze the document.
+- Since `vscode-tslint` lints one file a time only, it cannot support tslint rules that require the type checker. The language service plugin doesn't have this limitation.
+- `vscode-tslint` provides additional [features](https://marketplace.visualstudio.com/items?itemName=eg2.tslint), please file issue requests for the features you are missing.
 
 ![ts version switcher](images/ts-switcher.png)
 

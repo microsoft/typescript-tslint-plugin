@@ -63,5 +63,28 @@ To use the plugin with VS Code:
 ![tslint demo VS Code](images/TslintLanguageServiceDemoVSCode.gif)
 
 
+# Development Setup 
+
+This section describes how to setup your environment so that you can develop and test the language server plugin.
+
+The folder `dev` contains a project with a `tsconfig.json` that enables the tslint-languageservice plugin a `tslint.json` and some test files with rule violations you can use for manual testing.
+
+## VS Code
+
+To compile the test for manual testing run `npm run devtest`, this script compiles the plugin and patches the `tslint-language-service` module inside the `dev` folder.
+
+To test open VS Code on the dev folder and use the TypeScript version picker to switch to the local version of TypeScript. This version will use the patches `tslint-language-service` module.
+
+To debug you use two version of VS Code, e.g., the stable and the insider version. Use the insider version for development and the stable version for debugging.
+- in the insider version open the tslint-language-service plugin project
+- launch the stable version from a shell with the `TSS_DEBUG` environment variable set to port `5859`. This environment variable enables attaching a debugger to this port. In a command prompt/shell:
+  - make sure that the stable version isn't running already
+  - `set TSS_DEBUG=5859`
+  - cd to the `dev` folder
+  - `code .`
+
+To debug the tslint-language-service plugin press `F5`. The `dev` workspace has a launch configuration that attaches through port 5859 to the language server. To set a break point open `node_modules\tslint-language-service\out\src\index.js`. You have to set the break point in the .js file, but you can step afterwards in the TypeScript source file.
+
+
  
 

@@ -31,7 +31,33 @@ Your `node_modules` folder should look like this:
   * typescript
 
 **Notice** due to an issue in the implementation of the `no-unused-variable` rule ([issue[15344](https://github.com/Microsoft/TypeScript/issues/15344)]), this rule will be disabled by the plugin. You can use the typescript compiler options `noUnusedLocals` and `noUnusedParameters` instead. 
+
+## Configuration options
+
+**Notice** this configuration settings allow you to configure the behaviour of the tslint-language-service plugin. To configure rules and tslint options you should use the `tslint.json` file.
+
+ * `configFile` - the configuration file that tslint should use instead of the default tslint.json.
+ * `ignoreDefinitionFiles` - control if TypeScript definition files should be ignored.
+ * `alwaysShowRuleFailuresAsWarnings` - always show rule failures as warnings, ignoring the severity configuration in the tslint.json configuration.
+ * `disableNoUnusedVariableRule` - disable `no-unused-variable` rule.
  
+Here a configuration sample:
+
+```json
+{
+  "compilerOptions": {
+    "plugins": [
+      { "name": "tslint-language-service",
+        "alwaysShowRuleFailuresAsWarnings": false,
+        "ignoreDefinitionFiles": true,
+        "configFile": "../tslint.json",
+        "disableNoUnusedVariableRule": false
+      }
+    ]
+  }
+}
+```
+
 # Editors Support
  
 All editors which consumes tsserver (VSCode, Sublime, Eclipse, etc) can use `tslint-language-service`. Here a demo with [Eclipse](https://github.com/angelozerr/typescript.java) and `tslint 5.0.0`

@@ -2,12 +2,19 @@
 	"compilerOptions": {
 		"target": "es5",
 		"module": "commonjs",
-		"sourceMap": true,
+		"inlineSourceMap": true,
+		"inlineSources": true,
 		"outDir": "out",
-		"lib": ["es6"]
+		"noImplicitAny": true,
+		"noUnusedParameters": true,
+		"noUnusedLocals": true,
+		"lib": [
+			"es6"
+		]
 	},
 	"exclude": [
-		"node_modules"
+		"node_modules",
+		"dev"
 	],
 	"compileOnSave": true
 }

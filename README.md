@@ -73,11 +73,13 @@ The folder `dev` contains a project with a `tsconfig.json` that enables the tsli
 
 To compile the test for manual testing run `npm run devtest`, this script compiles the plugin and patches the `tslint-language-service` module inside the `dev` folder.
 
-To test open VS Code on the dev folder and use the TypeScript version picker to switch to the local version of TypeScript. This version will use the patches `tslint-language-service` module.
+To test open VS Code on the dev folder and use the TypeScript version picker to switch to the local version of TypeScript. This version will use the patched `tslint-language-service` module.
 
-To debug you use two version of VS Code, e.g., the stable and the insider version. Use the insider version for development and the stable version for debugging.
-- in the insider version open the tslint-language-service plugin project
-- launch the stable version from a shell with the `TSS_DEBUG` environment variable set to port `5859`. This environment variable enables attaching a debugger to this port. In a command prompt/shell:
+To debug you use two versions of VS Code, e.g., the stable and the insider version. The idea is that one of them is configured to support attaching a debugger to the Typescript language server:
+- Use the insider version for development and open it on the tslint-language-service workspace.
+- Use the stable version for debugging opened on the `dev` folder of the tslint-language service.
+
+To setup the stable version for debugging, you need to set the environment variable `TSS_DEBUG` to port 5859. In a command prompt/shell:
   - make sure that the stable version isn't running already
   - `set TSS_DEBUG=5859`
   - cd to the `dev` folder

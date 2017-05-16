@@ -3,9 +3,10 @@
         "plugins": [
             {
                 "name": "tslint-language-service",
-                //"configFile": "../tslint.json",
                 "alwaysShowRuleFailuresAsWarnings": false,
                 "ignoreDefinitionFiles": true
+                //"configFile": "../tslint.json",
+                //"disableNoUnusedVariableRule": false
             }
         ],
         "module": "commonjs",

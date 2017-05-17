@@ -263,7 +263,7 @@ function init(modules: { typescript: typeof ts_module }) {
                     } else {
                         // in tslint 5 a Fix is a Replacement | Replacement[]                  
                         if (!Array.isArray(fix)) {
-                            replacements = [fix];
+                            replacements = [<any>fix];
                         } else {
                             replacements = fix;
                         }

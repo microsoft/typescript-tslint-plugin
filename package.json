@@ -1,6 +1,6 @@
 {
   "name": "tslint-language-service",
-  "version": "0.9.4",
+  "version": "0.9.5",
   "description": "tslint - language services",
   "main": "out/src/index.js",
   "author": "Angelo ZERR",
@@ -10,7 +10,7 @@
     "url": "https://github.com/angelozerr/tslint-language-service.git"
   },
   "scripts": {
-    "prepublish": "tsc",
+    "prepublish": "node node_modules/typescript/lib/tsc",
     "compile": "node node_modules/typescript/lib/tsc",
     "devtest": "tsc && copyfiles out/src/index.js dev/node_modules/tslint-language-service",
     "publish": "node ./scripts/git-tag.js",

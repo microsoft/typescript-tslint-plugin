@@ -140,6 +140,14 @@ function init(modules: { typescript: typeof ts_module }) {
             documentAutoFixes.set(computeKey(problem.getStartPosition().getPosition(), problem.getEndPosition().getPosition()), problem);
         }
 
+        function getConfigurationFailureMessage(err: any): string {
+            let errorMessage = `unknown error`;
+            if (typeof err.message === 'string' || err.message instanceof String) {
+                errorMessage = <string>err.message;
+            }
+            return `tslint: Cannot read tslint configuration - '${errorMessage}'`;
+        }
+
         function getConfiguration(filePath: string, configFileName: string): any {
             if (configCache.configuration && configCache.filePath === filePath) {
                 return configCache.configuration;
@@ -184,6 +192,11 @@ function init(modules: { typescript: typeof ts_module }) {
             };
             return configCache.configuration;
         }
+        
+        function captureWarnings(message?: any): void {
+            // TODO log to a user visible log
+            info.project.projectService.logger.info(`[tslint] ${message}`);
+        }
 
         proxy.getSemanticDiagnostics = (fileName: string) => {
             let prior = oldLS.getSemanticDiagnostics(fileName);
@@ -204,12 +217,19 @@ function init(modules: { typescript: typeof ts_module }) {
                 try {
                     configuration = getConfiguration(fileName, config.configFile);
                 } catch (err) {
-                    // this should not happen since we guard against incorrect configurations
-                    // showConfigurationFailure(conn, err);
+                    // TODO: show the reason for the configuration failure  to the user
+                    // https://github.com/Microsoft/TypeScript/issues/15913
+                    info.project.projectService.logger.info(getConfigurationFailureMessage(err))
                     return prior;
                 }
 
                 let result: tslint.LintResult;
+
+                // tslint writes warning messages using console.warn()
+                // capture the warnings and write them to the tslint log
+                let warn = console.warn;
+                console.warn = captureWarnings;
+
                 try { // protect against tslint crashes
                     // TODO the types of the Program provided by tsserver libary are not compatible with the one provided by typescript
                     // casting away the type
@@ -224,6 +244,8 @@ function init(modules: { typescript: typeof ts_module }) {
                     }
                     info.project.projectService.logger.info('tslint error ' + errorMessage);
                     return prior;
+                } finally {
+                    console.warn = warn;
                 }
 
                 if (result.failures.length > 0) {

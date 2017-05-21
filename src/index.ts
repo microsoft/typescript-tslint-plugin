@@ -2,16 +2,7 @@ import * as ts_module from "../node_modules/typescript/lib/tsserverlibrary";
 import * as tslint from 'tslint';
 import * as path from 'path';
 
-let codeFixActions = new Map<string, Map<string, tslint.RuleFailure>>();
-let registeredCodeFixes = false;
-
-let configCache = {
-    filePath: <string>null,
-    configuration: <any>null,
-    isDefaultConfig: false,
-    configFilePath: <string>null
-};
-
+// Settings for the plugin section in tsconfig.json
 interface Settings {
     alwaysShowRuleFailuresAsWarnings?: boolean;
     ignoreDefinitionFiles?: boolean;
@@ -25,8 +16,17 @@ const TSLINT_ERROR_CODE = 2515;
 function init(modules: { typescript: typeof ts_module }) {
     const ts = modules.typescript;
 
-    // By waiting for that TypeScript provides an API to register CodeFix
-    // we define a registerCodeFix which uses the existing ts.codefix namespace.
+    let codeFixActions = new Map<string, Map<string, tslint.RuleFailure>>();
+    let registeredCodeFixes = false;
+
+    let configCache = {
+        filePath: <string>null,
+        configuration: <any>null,
+        isDefaultConfig: false,
+        configFilePath: <string>null
+    };
+
+    // Work around the lack of API to register a CodeFix
     function registerCodeFix(action: codefix.CodeFix) {
         return (ts as any).codefix.registerCodeFix(action);
     }
@@ -37,7 +37,7 @@ function init(modules: { typescript: typeof ts_module }) {
     }
 
     function registerCodeFixes(registerCodeFix: (action: codefix.CodeFix) => void) {
-        // Code fix for tslint fixes
+        // Code fix for that is used for all tslint fixes
         registerCodeFix({
             errorCodes: [TSLINT_ERROR_CODE],
             getCodeActions: (_context: any) => {
@@ -61,6 +61,7 @@ function init(modules: { typescript: typeof ts_module }) {
             }
         }
 
+        // key to identify a rule failure
         function computeKey(start: number, end: number): string {
             return `[${start},${end}]`;
         }
@@ -171,7 +172,6 @@ function init(modules: { typescript: typeof ts_module }) {
             // See https://github.com/Microsoft/TypeScript/issues/15344
             // Therefore we remove the rule from the configuration.
             //
-
             // In tslint 5 the rules are stored in a Map, in earlier versions they were stored in an Object
             if (config.disableNoUnusedVariableRule === true || config.disableNoUnusedVariableRule === undefined) {
                 if (configuration.rules && configuration.rules instanceof Map) {
@@ -194,8 +194,110 @@ function init(modules: { typescript: typeof ts_module }) {
         }
         
         function captureWarnings(message?: any): void {
-            // TODO log to a user visible log
+            // TODO log to a user visible log and not only the TS-Server log
             info.project.projectService.logger.info(`[tslint] ${message}`);
+        }
+
+        function convertReplacementToTextChange(repl: tslint.Replacement): ts.TextChange {
+            return {
+                newText: repl.text,
+                span: { start: repl.start, length: repl.length }
+            };
+        }
+        
+        function getReplacements(fix: tslint.Fix): tslint.Replacement[]{
+            let replacements: tslint.Replacement[] = null;
+            // in tslint4 a Fix has a replacement property with the Replacements
+            if ((<any>fix).replacements) {
+                // tslint4
+                replacements = (<any>fix).replacements;
+            } else {
+                // in tslint 5 a Fix is a Replacement | Replacement[]                  
+                if (!Array.isArray(fix)) {
+                    replacements = [<any>fix];
+                } else {
+                    replacements = fix;
+                }
+            }
+            return replacements;
+        }
+
+        function addRuleFailureFix(fixes: ts_module.CodeAction[], problem: tslint.RuleFailure, fileName: string) {
+            let fix = problem.getFix();
+            let replacements: tslint.Replacement[] = getReplacements(fix);
+
+            fixes.push({
+                description: `Fix '${problem.getRuleName()}'`,
+                changes: [{
+                    fileName: fileName,
+                    textChanges: replacements.map(each => convertReplacementToTextChange(each))
+                }]
+            });  
+        }
+
+        function addDisableRuleFix(fixes: ts_module.CodeAction[], problem: tslint.RuleFailure, fileName: string, file: ts_module.SourceFile) {
+            fixes.push({
+                description: `Disable rule '${problem.getRuleName()}'`,
+                changes: [{
+                    fileName: fileName,
+                    textChanges: [{
+                        newText: `// tslint:disable-next-line:${problem.getRuleName()}\n`,
+                        span: { start: file.getLineStarts()[problem.getStartPosition().getLineAndCharacter().line], length: 0 }
+                    }]
+                }]
+            });
+        }
+
+        function addOpenConfigurationFix(fixes: ts_module.CodeAction[]) {
+            // the Open Configuration code action is disabled since there is no specified API to open an editor
+            let openConfigFixEnabled = false;
+            if (openConfigFixEnabled && configCache && configCache.configFilePath) {
+                fixes.push({
+                    description: `Open tslint.json`,
+                    changes: [{
+                        fileName: configCache.configFilePath,
+                        textChanges: []
+                    }]
+                });
+            }
+        }
+
+        function addAllAutoFixable(fixes: ts_module.CodeAction[], documentFixes: Map<string, tslint.RuleFailure>, fileName: string) {
+            const allReplacements = getNonOverlappingReplacements(documentFixes);
+            fixes.push({
+                description: `Fix all auto-fixable tslint failures`,
+                changes: [{
+                    fileName: fileName,
+                    textChanges: allReplacements.map(each => convertReplacementToTextChange(each))
+                }]
+            }); 
+        }
+
+        function getReplacement(failure: tslint.RuleFailure, at:number): tslint.Replacement {
+            return getReplacements(failure.getFix())[at];
+        }
+
+        function sortFailures(failures: tslint.RuleFailure[]):tslint.RuleFailure[] {
+	        // The failures.replacements are sorted by position, we sort on the position of the first replacement
+            return failures.sort((a, b) => {
+                return getReplacement(a, 0).start - getReplacement(b, 0).start;
+            });
+        }
+
+        function getNonOverlappingReplacements(documentFixes: Map<string, tslint.RuleFailure>): tslint.Replacement[] {
+            function overlaps(a: tslint.Replacement, b: tslint.Replacement): boolean {
+                return a.end >= b.start;
+            }
+
+            let sortedFailures = sortFailures([...documentFixes.values()]);
+            let nonOverlapping: tslint.Replacement[] = [];
+            for (let i = 0; i < sortedFailures.length; i++) {
+                let replacements = getReplacements(sortedFailures[i].getFix());
+                if (i === 0 || !overlaps(nonOverlapping[nonOverlapping.length - 1], replacements[0])) {
+                    nonOverlapping.push(...replacements)
+                }
+            }
+            return nonOverlapping;
         }
 
         proxy.getSemanticDiagnostics = (fileName: string) => {
@@ -217,7 +319,7 @@ function init(modules: { typescript: typeof ts_module }) {
                 try {
                     configuration = getConfiguration(fileName, config.configFile);
                 } catch (err) {
-                    // TODO: show the reason for the configuration failure  to the user
+                    // TODO: show the reason for the configuration failure to the user and not only in the log
                     // https://github.com/Microsoft/TypeScript/issues/15913
                     info.project.projectService.logger.info(getConfigurationFailureMessage(err))
                     return prior;
@@ -226,7 +328,7 @@ function init(modules: { typescript: typeof ts_module }) {
                 let result: tslint.LintResult;
 
                 // tslint writes warning messages using console.warn()
-                // capture the warnings and write them to the tslint log
+                // capture the warnings and write them to the tslint plugin log
                 let warn = console.warn;
                 console.warn = captureWarnings;
 
@@ -276,58 +378,14 @@ function init(modules: { typescript: typeof ts_module }) {
             if (documentFixes) {
                 let problem = documentFixes.get(computeKey(start, end));
                 if (problem) {
-                    let fix = problem.getFix();
-                    let replacements: tslint.Replacement[] = null;
-                    // in tslint4 a Fix has a replacement property with the Replacements
-                    if ((<any>fix).replacements) {
-                        // tslint4
-                        replacements = (<any>fix).replacements;
-                    } else {
-                        // in tslint 5 a Fix is a Replacement | Replacement[]                  
-                        if (!Array.isArray(fix)) {
-                            replacements = [<any>fix];
-                        } else {
-                            replacements = fix;
-                        }
-                    }
-
-                    // Add tslint replacements codefix
-                    const textChanges = replacements.map(each => convertReplacementToTextChange(each));
-                    prior.push({
-                        description: `Fix '${problem.getRuleName()}'`,
-                        changes: [{
-                            fileName: fileName,
-                            textChanges: textChanges
-                        }]
-                    });
-                    const file = oldLS.getProgram().getSourceFile(fileName);
-                    // Add disable tslint rule codefix
-                    prior.push({
-                        description: `Disable rule '${problem.getRuleName()}'`,
-                        changes: [{
-                            fileName: fileName,
-                            textChanges: [{
-                                newText: `// tslint:disable-next-line:${problem.getRuleName()}\n`,
-                                span: { start: file.getLineStarts()[problem.getStartPosition().getLineAndCharacter().line], length: 0 }
-                            }
-                            ]
-                        }]
-                    });
+                    addRuleFailureFix(prior, problem, fileName);                    
+                }
+                addAllAutoFixable(prior, documentFixes, fileName);
+                if (problem) {
+                    addOpenConfigurationFix(prior);
+                    addDisableRuleFix(prior, problem, fileName, oldLS.getProgram().getSourceFile(fileName));
                 }
             }
-            // Add "Go to rule definition" tslint.json codefix
-            /* Comment this codefix, because it doesn't work with VSCode because textChanges is empty.
-               Hope one day https://github.com/angelozerr/tslint-language-service/issues/4 will be supported.
-                 
-               if (configCache && configCache.configFilePath) {
-                prior.push({
-                    description: `Open tslint.json`,
-                    changes: [{
-                        fileName: configCache.configFilePath,
-                        textChanges: []
-                    }]
-                });
-            }*/
             return prior;
         };
         return proxy;
@@ -338,14 +396,8 @@ function init(modules: { typescript: typeof ts_module }) {
 
 export = init;
 
-function convertReplacementToTextChange(repl: tslint.Replacement): ts.TextChange {
-    return {
-        newText: repl.text,
-        span: { start: repl.start, length: repl.length }
-    };
-}
-
 /* @internal */
+// work around for missing API to register a code fix
 namespace codefix {
 
     export interface CodeFix {

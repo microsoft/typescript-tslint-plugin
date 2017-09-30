@@ -301,10 +301,7 @@ function init(modules: { typescript: typeof ts_module }) {
         }
 
         proxy.getSemanticDiagnostics = (fileName: string) => {
-            let prior = oldLS.getSemanticDiagnostics(fileName);
-            if (prior === undefined) {
-                prior = [];
-            }
+            const prior = oldLS.getSemanticDiagnostics(fileName);
 
             try {
                 info.project.projectService.logger.info(`Computing tslint semantic diagnostics...`);
@@ -354,10 +351,12 @@ function init(modules: { typescript: typeof ts_module }) {
                     const tslintProblems = filterProblemsForDocument(fileName, result.failures);
                     if (tslintProblems && tslintProblems.length) {
                         const file = oldLS.getProgram().getSourceFile(fileName);
-                        prior.push.apply(prior, tslintProblems.map(d => makeDiagnostic(d, file)));
+                        const diagnostics = prior ? [...prior] : [];
                         tslintProblems.forEach(problem => {
+                            diagnostics.push(makeDiagnostic(problem, file));
                             recordCodeAction(problem, file);
                         });
+                        return diagnostics;
                     }
                 }
             } catch (e) {
@@ -369,23 +368,26 @@ function init(modules: { typescript: typeof ts_module }) {
 
         proxy.getCodeFixesAtPosition = function (fileName: string, start: number, end: number, errorCodes: number[], formatOptions: ts.FormatCodeSettings): ts.CodeAction[] {
             let prior = oldLS.getCodeFixesAtPosition(fileName, start, end, errorCodes, formatOptions);
-            if (prior === undefined) {
-                prior = [];
-            }
+  
             info.project.projectService.logger.info("tslint-language-service getCodeFixes " + errorCodes[0]);
             let documentFixes = codeFixActions.get(fileName);
 
             if (documentFixes) {
+                const fixes = prior ? [...prior] : [];
+
                 let problem = documentFixes.get(computeKey(start, end));
                 if (problem) {
-                    addRuleFailureFix(prior, problem, fileName);                    
+                    addRuleFailureFix(fixes, problem, fileName);                    
                 }
-                addAllAutoFixable(prior, documentFixes, fileName);
+                addAllAutoFixable(fixes, documentFixes, fileName);
                 if (problem) {
-                    addOpenConfigurationFix(prior);
-                    addDisableRuleFix(prior, problem, fileName, oldLS.getProgram().getSourceFile(fileName));
+                    addOpenConfigurationFix(fixes);
+                    addDisableRuleFix(fixes, problem, fileName, oldLS.getProgram().getSourceFile(fileName));
                 }
+
+                return fixes;
             }
+            
             return prior;
         };
         return proxy;

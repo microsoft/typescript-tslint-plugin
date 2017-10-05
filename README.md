@@ -60,7 +60,7 @@ Here a configuration sample:
 
 # Editors Support
  
-All editors which consumes tsserver (VSCode, Sublime, Eclipse, etc) can use `tslint-language-service`. Here a demo with [Eclipse](https://github.com/angelozerr/typescript.java) and `tslint 5.0.0`
+All editors which consumes tsserver (VSCode >=1.16.1, Sublime, Eclipse, etc) can use `tslint-language-service`. Here a demo with [Eclipse](https://github.com/angelozerr/typescript.java) and `tslint 5.0.0`.
 
 ![tslint demo](images/TslintLanguageServiceDemo.gif)
 
@@ -72,7 +72,7 @@ Install [typescript.java](https://github.com/angelozerr/typescript.java/wiki/Ins
 
 *If you also have the [vscode-tslint](https://marketplace.visualstudio.com/items?itemName=eg2.tslint) extension in VS Code installed, please disable it to avoid that files are linted twice.*
 
-To use the plugin with VS Code:
+To use the plugin with VS Code (>=1.16.1):
 - If you are using the `vscode-tslint` extension disable or uninstall it.
 - Install `typescript`, the `tslint-language-service`, and `tslint` into your workspace using `npm install typescript tslint tslint-language-service`.
 - Open VS Code on the workspace

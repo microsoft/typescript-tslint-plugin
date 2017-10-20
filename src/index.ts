@@ -8,6 +8,7 @@ interface Settings {
     ignoreDefinitionFiles?: boolean;
     configFile?: string;
     disableNoUnusedVariableRule?: boolean  // support to enable/disable the workaround for https://github.com/Microsoft/TypeScript/issues/15344
+    supressWhileTypeErrorsPresent: boolean;
 }
 
 //TODO we "steal"" an error code with a registered code fix. 2515 = implement inherited abstract class
@@ -303,6 +304,10 @@ function init(modules: { typescript: typeof ts_module }) {
         proxy.getSemanticDiagnostics = (fileName: string) => {
             const prior = oldLS.getSemanticDiagnostics(fileName);
 
+            if (config.supressWhileTypeErrorsPresent && prior.length > 0) {
+                return prior;
+            }
+
             try {
                 info.project.projectService.logger.info(`Computing tslint semantic diagnostics...`);
                 if (codeFixActions.has(fileName)) {
@@ -368,7 +373,10 @@ function init(modules: { typescript: typeof ts_module }) {
 
         proxy.getCodeFixesAtPosition = function (fileName: string, start: number, end: number, errorCodes: number[], formatOptions: ts.FormatCodeSettings): ts.CodeAction[] {
             let prior = oldLS.getCodeFixesAtPosition(fileName, start, end, errorCodes, formatOptions);
-  
+            if (config.supressWhileTypeErrorsPresent && prior.length > 0) {
+                return prior;
+            }
+
             info.project.projectService.logger.info("tslint-language-service getCodeFixes " + errorCodes[0]);
             let documentFixes = codeFixActions.get(fileName);
 

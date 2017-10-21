@@ -40,6 +40,7 @@ Your `node_modules` folder should look like this:
  * `ignoreDefinitionFiles` - control if TypeScript definition files should be ignored.
  * `alwaysShowRuleFailuresAsWarnings` - always show rule failures as warnings, ignoring the severity configuration in the tslint.json configuration.
  * `disableNoUnusedVariableRule` - disable `no-unused-variable` rule.
+ * `supressWhileTypeErrorsPresent` - supress tslint errors from being reported while other errors are present.
  
 Here a configuration sample:
 
@@ -51,7 +52,8 @@ Here a configuration sample:
         "alwaysShowRuleFailuresAsWarnings": false,
         "ignoreDefinitionFiles": true,
         "configFile": "../tslint.json",
-        "disableNoUnusedVariableRule": false
+        "disableNoUnusedVariableRule": false,
+        "supressWhileTypeErrorsPresent": false
       }
     ]
   }

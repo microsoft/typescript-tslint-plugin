@@ -30,7 +30,7 @@ Your `node_modules` folder should look like this:
   * tslint-language-service
   * typescript
 
-**Notice** due to an issue in the implementation of the `no-unused-variable` rule ([issue[15344](https://github.com/Microsoft/TypeScript/issues/15344)]), this rule will be disabled by the plugin. You can use the typescript compiler options `noUnusedLocals` and `noUnusedParameters` instead. 
+**Notice** due to an issue in the implementation of the `no-unused-variable` rule ([issue[2469](https://github.com/palantir/tslint/issues/2649)]), this rule will be disabled by the plugin. You can use the typescript compiler options `noUnusedLocals` and `noUnusedParameters` instead. 
 
 ## Configuration options
 

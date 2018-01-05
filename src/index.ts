@@ -47,10 +47,17 @@ function init(modules: { typescript: typeof ts_module }) {
         });
     }
 
-    function create(info: ts.server.PluginCreateInfo) {
+    function fixRelativeConfigFilePath(config: Settings, projectRoot: string): Settings {
+        if (!config.configFile) {
+            return config;
+        }
+        config.configFile = path.join(projectRoot, config.configFile);
+        return config;
+    }
 
+    function create(info: ts.server.PluginCreateInfo) {
         info.project.projectService.logger.info("tslint-language-service loaded");
-        let config: Settings = info.config;
+        let config: Settings = fixRelativeConfigFilePath(info.config, info.project.getCurrentDirectory());
         let configuration: tslint.Configuration.IConfigurationFile = null;
 
         // Set up decorator

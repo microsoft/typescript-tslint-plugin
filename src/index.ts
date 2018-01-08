@@ -51,6 +51,9 @@ function init(modules: { typescript: typeof ts_module }) {
         if (!config.configFile) {
             return config;
         }
+        if (path.isAbsolute(config.configFile)) {
+            return config;
+        }
         config.configFile = path.join(projectRoot, config.configFile);
         return config;
     }

@@ -36,7 +36,7 @@ Your `node_modules` folder should look like this:
 
 **Notice** this configuration settings allow you to configure the behaviour of the tslint-language-service plugin. To configure rules and tslint options you should use the `tslint.json` file.
 
- * `configFile` - the configuration file that tslint should use instead of the default tslint.json.
+ * `configFile` - the configuration file that tslint should use instead of the default tslint.json. A relative file path is resolved relative to the project root.
  * `ignoreDefinitionFiles` - control if TypeScript definition files should be ignored.
  * `alwaysShowRuleFailuresAsWarnings` - always show rule failures as warnings, ignoring the severity configuration in the tslint.json configuration.
  * `disableNoUnusedVariableRule` - disable `no-unused-variable` rule.

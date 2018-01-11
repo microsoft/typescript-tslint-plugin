@@ -17,10 +17,13 @@
     "test": "tsc && tape out/test/**/*.spec.js",
     "lint": "tslint src/index.ts"
   },
-  "dependencies": {},
+  "dependencies": {
+    "mock-require": "^2.0.2"
+  },
   "devDependencies": {
     "@types/node": "^7.0.8",
     "@types/tape": "^4.2.29",
+    "@types/mock-require": "^2.0.0",
     "tape": "^4.6.3",
     "tslint": "^5.2.0",
     "typescript": "^2.3.2",

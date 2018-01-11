@@ -41,6 +41,7 @@ Your `node_modules` folder should look like this:
  * `alwaysShowRuleFailuresAsWarnings` - always show rule failures as warnings, ignoring the severity configuration in the tslint.json configuration.
  * `disableNoUnusedVariableRule` - disable `no-unused-variable` rule.
  * `supressWhileTypeErrorsPresent` - supress tslint errors from being reported while other errors are present.
+ * `mockTypeScriptVersion` - force tslint to use the same version of TypeScript as this plugin. This will affect other plugins that require the typescript package.
  
 Here a configuration sample:
 
@@ -53,7 +54,8 @@ Here a configuration sample:
         "ignoreDefinitionFiles": true,
         "configFile": "../tslint.json",
         "disableNoUnusedVariableRule": false,
-        "supressWhileTypeErrorsPresent": false
+        "supressWhileTypeErrorsPresent": false,
+        "mockTypeScriptVersion": false
       }
     ]
   }

@@ -1,6 +1,7 @@
 import * as ts_module from "../node_modules/typescript/lib/tsserverlibrary";
 import * as tslint from 'tslint';
 import * as path from 'path';
+import * as mockRequire from 'mock-require';
 
 // Settings for the plugin section in tsconfig.json
 interface Settings {
@@ -9,6 +10,7 @@ interface Settings {
     configFile?: string;
     disableNoUnusedVariableRule?: boolean  // support to enable/disable the workaround for https://github.com/Microsoft/TypeScript/issues/15344
     supressWhileTypeErrorsPresent: boolean;
+    mockTypeScriptVersion: boolean;
 }
 
 //TODO we "steal"" an error code with a registered code fix. 2515 = implement inherited abstract class
@@ -16,6 +18,7 @@ const TSLINT_ERROR_CODE = 2515;
 
 function init(modules: { typescript: typeof ts_module }) {
     const ts = modules.typescript;
+    let tslint = require('tslint');
 
     let codeFixActions = new Map<string, Map<string, tslint.RuleFailure>>();
     let registeredCodeFixes = false;
@@ -62,6 +65,11 @@ function init(modules: { typescript: typeof ts_module }) {
         info.project.projectService.logger.info("tslint-language-service loaded");
         let config: Settings = fixRelativeConfigFilePath(info.config, info.project.getCurrentDirectory());
         let configuration: tslint.Configuration.IConfigurationFile = null;
+
+        if(config.mockTypeScriptVersion) {
+            mockRequire('typescript', ts);
+            tslint = mockRequire.reRequire('tslint');
+        }
 
         // Set up decorator
         const proxy = Object.create(null) as ts.LanguageService;

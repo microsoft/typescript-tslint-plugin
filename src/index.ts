@@ -13,8 +13,7 @@ interface Settings {
     mockTypeScriptVersion: boolean;
 }
 
-//TODO we "steal"" an error code with a registered code fix. 2515 = implement inherited abstract class
-const TSLINT_ERROR_CODE = 2515;
+const TSLINT_ERROR_CODE = 100000;
 
 function init(modules: { typescript: typeof ts_module }) {
     const ts = modules.typescript;
@@ -389,7 +388,7 @@ function init(modules: { typescript: typeof ts_module }) {
             return prior;
         };
 
-        proxy.getCodeFixesAtPosition = function (fileName: string, start: number, end: number, errorCodes: number[], formatOptions: ts.FormatCodeSettings): ts.CodeAction[] {
+        proxy.getCodeFixesAtPosition = function (fileName: string, start: number, end: number, errorCodes: number[], formatOptions: ts.FormatCodeSettings): ReadonlyArray<ts.CodeAction> {
             let prior = oldLS.getCodeFixesAtPosition(fileName, start, end, errorCodes, formatOptions);
             if (config.supressWhileTypeErrorsPresent && prior.length > 0) {
                 return prior;

@@ -240,17 +240,42 @@ function init(modules: { typescript: typeof ts_module }) {
             return replacements;
         }
 
-        function addRuleFailureFix(fixes: ts_module.CodeAction[], problem: tslint.RuleFailure, fileName: string) {
+        function problemToFileTextChange(problem: tslint.RuleFailure, fileName: string): ts_module.FileTextChanges {
             let fix = problem.getFix();
             let replacements: tslint.Replacement[] = getReplacements(fix);
 
+            return {
+                fileName: fileName,
+                textChanges: replacements.map(each => convertReplacementToTextChange(each)),
+            }
+        }
+
+        function addRuleFailureFix(fixes: ts_module.CodeAction[], problem: tslint.RuleFailure, fileName: string) {
             fixes.push({
                 description: `Fix '${problem.getRuleName()}'`,
-                changes: [{
-                    fileName: fileName,
-                    textChanges: replacements.map(each => convertReplacementToTextChange(each))
-                }]
-            });  
+                changes: [problemToFileTextChange(problem, fileName)]
+            });
+        }
+
+        /* Generate a code action that fixes all instances of ruleName.  */
+        function addRuleFailureFixAll(fixes: ts_module.CodeAction[], ruleName: string, problems: Map<string, tslint.RuleFailure>, fileName: string) {
+            const changes: ts_module.FileTextChanges[] = [];
+
+            for (const problem of problems.values()) {
+                if (problem.getRuleName() === ruleName) {
+                    changes.push(problemToFileTextChange(problem, fileName));
+                }
+            }
+
+            /* No need for this action if there's only one instance.  */
+            if (changes.length < 2) {
+                return;
+            }
+
+            fixes.push({
+                description: `Fix all '${ruleName}'`,
+                changes: changes,
+            });
         }
 
         function addDisableRuleFix(fixes: ts_module.CodeAction[], problem: tslint.RuleFailure, fileName: string, file: ts_module.SourceFile) {
@@ -402,7 +427,8 @@ function init(modules: { typescript: typeof ts_module }) {
 
                 let problem = documentFixes.get(computeKey(start, end));
                 if (problem) {
-                    addRuleFailureFix(fixes, problem, fileName);                    
+                    addRuleFailureFix(fixes, problem, fileName);
+                    addRuleFailureFixAll(fixes, problem.getRuleName(), documentFixes, fileName);
                 }
                 addAllAutoFixable(fixes, documentFixes, fileName);
                 if (problem) {

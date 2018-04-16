@@ -17,7 +17,6 @@ const TSLINT_ERROR_CODE = 100000;
 
 function init(modules: { typescript: typeof ts_module }) {
     const ts = modules.typescript;
-    let tslint = require('tslint');
 
     let codeFixActions = new Map<string, Map<string, tslint.RuleFailure>>();
     let registeredCodeFixes = false;
@@ -67,8 +66,8 @@ function init(modules: { typescript: typeof ts_module }) {
 
         if(config.mockTypeScriptVersion) {
             mockRequire('typescript', ts);
-            tslint = mockRequire.reRequire('tslint');
         }
+        const tslint = require('tslint')
 
         // Set up decorator
         const proxy = Object.create(null) as ts.LanguageService;

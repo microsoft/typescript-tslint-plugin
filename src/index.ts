@@ -38,10 +38,10 @@ function init(modules: { typescript: typeof ts_module }) {
     let registeredCodeFixes = false;
 
     let configCache = {
-        filePath: <string>null,
-        configuration: <any>null,
+        filePath: null as string | null,
+        configuration: null as any,
         isDefaultConfig: false,
-        configFilePath: <string>null
+        configFilePath: null as string | null
     };
 
     // Work around the lack of API to register a CodeFix
@@ -59,7 +59,7 @@ function init(modules: { typescript: typeof ts_module }) {
         registerCodeFix({
             errorCodes: [TSLINT_ERROR_CODE],
             getCodeActions: (_context: any) => {
-                return null;
+                return undefined;
             }
         });
     }
@@ -80,9 +80,9 @@ function init(modules: { typescript: typeof ts_module }) {
 
         logger.info('loaded');
         let config: Settings = fixRelativeConfigFilePath(info.config, info.project.getCurrentDirectory());
-        let configuration: tslint.Configuration.IConfigurationFile = null;
+        let configuration: tslint.Configuration.IConfigurationFile | null = null;
 
-        if(config.mockTypeScriptVersion) {
+        if (config.mockTypeScriptVersion) {
             mockRequire('typescript', ts);
         }
         const tslint = require('tslint')
@@ -106,32 +106,35 @@ function init(modules: { typescript: typeof ts_module }) {
             const configFile = info.project.getConfigFilePath();
             logger.info(`Found configured project: ${configFile}`);
 
-            ts.sys.watchFile(configFile, (_fileName: string, eventKind: ts.FileWatcherEventKind) => {
-                if (eventKind !== ts.FileWatcherEventKind.Changed) {
-                    return;
-                }
 
-                logger.info('Config file changed');
+            if (ts.sys.watchFile) {
+                ts.sys.watchFile(configFile, (_fileName: string, eventKind: ts.FileWatcherEventKind) => {
+                    if (eventKind !== ts.FileWatcherEventKind.Changed) {
+                        return;
+                    }
 
-                const configFileResult = ts.readConfigFile(configFile, ts.sys.readFile);
-                if (configFileResult.error || !configFileResult.config) {
-                    logger.info(`Error reading config file: ${configFileResult.error}`);
-                    return;
-                }
+                    logger.info('Config file changed');
 
-                if (!configFileResult.config.compilerOptions || !Array.isArray(configFileResult.config.compilerOptions.plugins)) {
-                    return;
-                }
+                    const configFileResult = ts.readConfigFile(configFile, ts.sys.readFile);
+                    if (configFileResult.error || !configFileResult.config) {
+                        logger.info(`Error reading config file: ${configFileResult.error}`);
+                        return;
+                    }
 
-                const pluginSettings = (configFileResult.config.compilerOptions.plugins as Array<any>).find(x => x.name === pluginId);
-                if (!pluginSettings) {
-                    return;
-                }
+                    if (!configFileResult.config.compilerOptions || !Array.isArray(configFileResult.config.compilerOptions.plugins)) {
+                        return;
+                    }
 
-                logger.info(`Updating config settings: ${JSON.stringify(pluginSettings)}`);
-                config = fixRelativeConfigFilePath(pluginSettings, info.project.getCurrentDirectory());
-                info.project.refreshDiagnostics();
-            });
+                    const pluginSettings = (configFileResult.config.compilerOptions.plugins as Array<any>).find(x => x.name === pluginId);
+                    if (!pluginSettings) {
+                        return;
+                    }
+
+                    logger.info(`Updating config settings: ${JSON.stringify(pluginSettings)}`);
+                    config = fixRelativeConfigFilePath(pluginSettings, info.project.getCurrentDirectory());
+                    info.project.refreshDiagnostics();
+                });
+            }
         }
 
         function makeDiagnostic(problem: tslint.RuleFailure, file: ts.SourceFile): ts.Diagnostic {
@@ -177,7 +180,7 @@ function init(modules: { typescript: typeof ts_module }) {
             });
         }
 
-        function replacementsAreEmpty(fix: tslint.Fix): boolean {
+        function replacementsAreEmpty(fix: tslint.Fix | undefined): boolean {
             // in tslint 4 a Fix has a replacement property witht the Replacements
             if ((<any>fix).replacements) {
                 return (<any>fix).replacements.length === 0;
@@ -190,7 +193,7 @@ function init(modules: { typescript: typeof ts_module }) {
         }
 
         function recordCodeAction(problem: tslint.RuleFailure, file: ts.SourceFile) {
-            let fix: tslint.Fix = null;
+            let fix: tslint.Fix | undefined = undefined;
 
             // tslint can return a fix with an empty replacements array, these fixes are ignored
             if (problem.getFix && problem.getFix() && !replacementsAreEmpty(problem.getFix())) { // tslint fixes are not available in tslint < 3.17
@@ -201,7 +204,7 @@ function init(modules: { typescript: typeof ts_module }) {
                 return;
             }
 
-            let documentAutoFixes: Map<string, tslint.RuleFailure> = codeFixActions.get(file.fileName);
+            let documentAutoFixes: Map<string, tslint.RuleFailure> | undefined = codeFixActions.get(file.fileName);
             if (!documentAutoFixes) {
                 documentAutoFixes = new Map<string, tslint.RuleFailure>();
                 codeFixActions.set(file.fileName, documentAutoFixes);
@@ -217,7 +220,7 @@ function init(modules: { typescript: typeof ts_module }) {
             return `tslint: Cannot read tslint configuration - '${errorMessage}'`;
         }
 
-        function getConfiguration(filePath: string, configFileName: string): any {
+        function getConfiguration(filePath: string, configFileName: string | undefined): any {
             if (configCache.configuration && configCache.filePath === filePath) {
                 return configCache.configuration;
             }
@@ -260,7 +263,7 @@ function init(modules: { typescript: typeof ts_module }) {
             };
             return configCache.configuration;
         }
-        
+
         function captureWarnings(message?: any): void {
             // TODO log to a user visible log and not only the TS-Server log
             logger.info(`[tslint] ${message}`);
@@ -272,9 +275,9 @@ function init(modules: { typescript: typeof ts_module }) {
                 span: { start: repl.start, length: repl.length }
             };
         }
-        
-        function getReplacements(fix: tslint.Fix): tslint.Replacement[]{
-            let replacements: tslint.Replacement[] = null;
+
+        function getReplacements(fix: tslint.Fix | undefined): tslint.Replacement[] {
+            let replacements: tslint.Replacement[] | null = null;
             // in tslint4 a Fix has a replacement property with the Replacements
             if ((<any>fix).replacements) {
                 // tslint4
@@ -287,7 +290,7 @@ function init(modules: { typescript: typeof ts_module }) {
                     replacements = fix;
                 }
             }
-            return replacements;
+            return replacements || [];
         }
 
         function problemToFileTextChange(problem: tslint.RuleFailure, fileName: string): ts_module.FileTextChanges {
@@ -363,15 +366,15 @@ function init(modules: { typescript: typeof ts_module }) {
                     fileName: fileName,
                     textChanges: allReplacements.map(each => convertReplacementToTextChange(each))
                 }]
-            }); 
+            });
         }
 
-        function getReplacement(failure: tslint.RuleFailure, at:number): tslint.Replacement {
+        function getReplacement(failure: tslint.RuleFailure, at: number): tslint.Replacement {
             return getReplacements(failure.getFix())[at];
         }
 
-        function sortFailures(failures: tslint.RuleFailure[]):tslint.RuleFailure[] {
-	        // The failures.replacements are sorted by position, we sort on the position of the first replacement
+        function sortFailures(failures: tslint.RuleFailure[]): tslint.RuleFailure[] {
+            // The failures.replacements are sorted by position, we sort on the position of the first replacement
             return failures.sort((a, b) => {
                 return getReplacement(a, 0).start - getReplacement(b, 0).start;
             });
@@ -447,7 +450,7 @@ function init(modules: { typescript: typeof ts_module }) {
                 if (result.failures.length > 0) {
                     const tslintProblems = filterProblemsForDocument(fileName, result.failures);
                     if (tslintProblems && tslintProblems.length) {
-                        const file = oldLS.getProgram().getSourceFile(fileName);
+                        const file = oldLS.getProgram()!.getSourceFile(fileName)!;
                         const diagnostics = prior ? [...prior] : [];
                         tslintProblems.forEach(problem => {
                             diagnostics.push(makeDiagnostic(problem, file));
@@ -483,12 +486,12 @@ function init(modules: { typescript: typeof ts_module }) {
                 addAllAutoFixable(fixes, documentFixes, fileName);
                 if (problem) {
                     addOpenConfigurationFix(fixes);
-                    addDisableRuleFix(fixes, problem, fileName, oldLS.getProgram().getSourceFile(fileName));
+                    addDisableRuleFix(fixes, problem, fileName, oldLS.getProgram()!.getSourceFile(fileName)!);
                 }
 
                 return fixes;
             }
-            
+
             return prior;
         };
         return proxy;

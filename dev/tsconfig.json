@@ -2,7 +2,7 @@
     "compilerOptions": {
         "plugins": [
             {
-                "name": "tslint-language-service",
+                "name": "typescript-tslint-plugin",
                 "alwaysShowRuleFailuresAsWarnings": false,
                 "ignoreDefinitionFiles": true
                 //"configFile": "../tslint.json",

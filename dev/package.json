@@ -6,6 +6,6 @@
   "devDependencies": {
     "tslint": "^5.2.0",
     "typescript": "^2.3.2",
-    "tslint-language-service": "^0.9.4"
+    "typescript-tslint-plugin": "file:../"
   }
 }

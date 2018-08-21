@@ -31,6 +31,33 @@ class Logger {
     }
 }
 
+class ConfigFileWatcher {
+    private readonly _watchedConfigs = new Set<string>();
+
+    public constructor(
+        private readonly ts: typeof ts_module,
+        private readonly onChange: (fileName: string) => void
+    ) { }
+
+    public ensureWatching(file: string) {
+        if (!this.ts.sys.watchFile) {
+            return;
+        }
+
+        if (this._watchedConfigs.has(file)) {
+            return;
+        }
+
+        this._watchedConfigs.add(file);
+
+        this.ts.sys.watchFile(file, (fileName: string, eventKind: ts.FileWatcherEventKind) => {
+            if (eventKind === this.ts.FileWatcherEventKind.Changed) {
+                this.onChange(fileName);
+            }
+        });
+    }
+}
+
 function init(modules: { typescript: typeof ts_module }) {
     const ts = modules.typescript;
 
@@ -102,40 +129,43 @@ function init(modules: { typescript: typeof ts_module }) {
         }
 
         // Watch config file for changes
-        if (info.project instanceof ts.server.ConfiguredProject) {
+        if (info.project instanceof ts.server.ConfiguredProject && ts.sys.watchFile) {
             const configFile = info.project.getConfigFilePath();
             logger.info(`Found configured project: ${configFile}`);
 
+            ts.sys.watchFile(configFile, (_fileName: string, eventKind: ts.FileWatcherEventKind) => {
+                if (eventKind !== ts.FileWatcherEventKind.Changed) {
+                    return;
+                }
 
-            if (ts.sys.watchFile) {
-                ts.sys.watchFile(configFile, (_fileName: string, eventKind: ts.FileWatcherEventKind) => {
-                    if (eventKind !== ts.FileWatcherEventKind.Changed) {
-                        return;
-                    }
+                logger.info('TSConfig file changed');
 
-                    logger.info('Config file changed');
+                const configFileResult = ts.readConfigFile(configFile, ts.sys.readFile);
+                if (configFileResult.error || !configFileResult.config) {
+                    logger.info(`Error reading config file: ${configFileResult.error}`);
+                    return;
+                }
 
-                    const configFileResult = ts.readConfigFile(configFile, ts.sys.readFile);
-                    if (configFileResult.error || !configFileResult.config) {
-                        logger.info(`Error reading config file: ${configFileResult.error}`);
-                        return;
-                    }
+                if (!configFileResult.config.compilerOptions || !Array.isArray(configFileResult.config.compilerOptions.plugins)) {
+                    return;
+                }
 
-                    if (!configFileResult.config.compilerOptions || !Array.isArray(configFileResult.config.compilerOptions.plugins)) {
-                        return;
-                    }
+                const pluginSettings = (configFileResult.config.compilerOptions.plugins as Array<any>).find(x => x.name === pluginId);
+                if (!pluginSettings) {
+                    return;
+                }
 
-                    const pluginSettings = (configFileResult.config.compilerOptions.plugins as Array<any>).find(x => x.name === pluginId);
-                    if (!pluginSettings) {
-                        return;
-                    }
-
-                    logger.info(`Updating config settings: ${JSON.stringify(pluginSettings)}`);
-                    config = fixRelativeConfigFilePath(pluginSettings, info.project.getCurrentDirectory());
-                    info.project.refreshDiagnostics();
-                });
-            }
+                logger.info(`Updating config settings: ${JSON.stringify(pluginSettings)}`);
+                config = fixRelativeConfigFilePath(pluginSettings, info.project.getCurrentDirectory());
+                info.project.refreshDiagnostics();
+            });
         }
+
+        const configFileWatcher = new ConfigFileWatcher(ts, _filePath => {
+            logger.info('TSlint file changed');
+            configCache.configuration = null;
+            info.project.refreshDiagnostics();
+        });
 
         function makeDiagnostic(problem: tslint.RuleFailure, file: ts.SourceFile): ts.Diagnostic {
             let message = (problem.getRuleName() !== null)
@@ -261,6 +291,11 @@ function init(modules: { typescript: typeof ts_module }) {
                 configuration: configuration,
                 configFilePath: configFilePath
             };
+
+            if (configFilePath) {
+                configFileWatcher.ensureWatching(configFilePath);
+            }
+
             return configCache.configuration;
         }
 

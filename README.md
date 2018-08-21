@@ -1,7 +1,10 @@
-# tslint-language-service
+# TypeScript TSLint language service plugin
 
+Forked from https://github.com/angelozerr/tslint-language-service
+
+<!-- 
 [![Build Status](https://secure.travis-ci.org/angelozerr/tslint-language-service.png)](http://travis-ci.org/angelozerr/tslint-language-service)
-[![NPM version](https://img.shields.io/npm/v/tslint-language-service.svg)](https://www.npmjs.org/package/tslint-language-service)  
+[![NPM version](https://img.shields.io/npm/v/tslint-language-service.svg)](https://www.npmjs.org/package/tslint-language-service)   -->
 
 TypeScript [language service plugin](https://blogs.msdn.microsoft.com/typescript/2017/04/27/announcing-typescript-2-3/) for [tslint](https://github.com/palantir/tslint). 
 

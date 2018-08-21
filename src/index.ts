@@ -62,7 +62,6 @@ function init(modules: { typescript: typeof ts_module }) {
     const ts = modules.typescript;
 
     let codeFixActions = new Map<string, Map<string, tslint.RuleFailure>>();
-    let registeredCodeFixes = false;
 
     let configCache = {
         filePath: null as string | null,
@@ -71,25 +70,10 @@ function init(modules: { typescript: typeof ts_module }) {
         configFilePath: null as string | null
     };
 
-    // Work around the lack of API to register a CodeFix
-    function registerCodeFix(action: codefix.CodeFix) {
-        return (ts as any).codefix.registerCodeFix(action);
-    }
-
-    if (!registeredCodeFixes && ts && (ts as any).codefix) {
-        registerCodeFixes(registerCodeFix);
-        registeredCodeFixes = true;
-    }
-
-    function registerCodeFixes(registerCodeFix: (action: codefix.CodeFix) => void) {
-        // Code fix for that is used for all tslint fixes
-        registerCodeFix({
-            errorCodes: [TSLINT_ERROR_CODE],
-            getCodeActions: (_context: any) => {
-                return undefined;
-            }
-        });
-    }
+    const getSupportedCodeFixes = ts.getSupportedCodeFixes.bind(ts);
+    ts.getSupportedCodeFixes = () => {
+        return getSupportedCodeFixes().concat(TSLINT_ERROR_CODE);
+    };
 
     function fixRelativeConfigFilePath(config: Settings, projectRoot: string): Settings {
         if (!config.configFile) {
@@ -536,13 +520,3 @@ function init(modules: { typescript: typeof ts_module }) {
 }
 
 export = init;
-
-/* @internal */
-// work around for missing API to register a code fix
-namespace codefix {
-
-    export interface CodeFix {
-        errorCodes: number[];
-        getCodeActions(context: any): ts.CodeAction[] | undefined;
-    }
-}

@@ -13,6 +13,8 @@ interface Settings {
     mockTypeScriptVersion: boolean;
 }
 
+const pluginId = 'tslint-language-service';
+
 const TSLINT_ERROR_CODE = 100000;
 
 function init(modules: { typescript: typeof ts_module }) {
@@ -81,6 +83,39 @@ function init(modules: { typescript: typeof ts_module }) {
         // key to identify a rule failure
         function computeKey(start: number, end: number): string {
             return `[${start},${end}]`;
+        }
+
+        // Watch config file for changes
+        if (info.project instanceof ts.server.ConfiguredProject) {
+            const configFile = info.project.getConfigFilePath();
+            info.project.projectService.logger.info(`Found configured project: ${configFile}`);
+
+            ts.sys.watchFile(configFile, (_fileName: string, eventKind: ts.FileWatcherEventKind) => {
+                if (eventKind !== ts.FileWatcherEventKind.Changed) {
+                    return;
+                }
+
+                info.project.projectService.logger.info(`Config file changed`);
+
+                const configFileResult = ts.readConfigFile(configFile, ts.sys.readFile);
+                if (configFileResult.error || !configFileResult.config) {
+                    info.project.projectService.logger.info(`Error reading config file: ${configFileResult.error}`);
+                    return;
+                }
+
+                if (!configFileResult.config.compilerOptions || !Array.isArray(configFileResult.config.compilerOptions.plugins)) {
+                    return;
+                }
+
+                const pluginSettings = (configFileResult.config.compilerOptions.plugins as Array<any>).find(x => x.name === pluginId);
+                if (!pluginSettings) {
+                    return;
+                }
+
+                info.project.projectService.logger.info(`Updating config settings: ${JSON.stringify(pluginSettings)}`);
+                config = fixRelativeConfigFilePath(pluginSettings, info.project.getCurrentDirectory());
+                info.project.refreshDiagnostics();
+            });
         }
 
         function makeDiagnostic(problem: tslint.RuleFailure, file: ts.SourceFile): ts.Diagnostic {

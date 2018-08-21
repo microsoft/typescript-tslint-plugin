@@ -17,6 +17,20 @@ const pluginId = 'tslint-language-service';
 
 const TSLINT_ERROR_CODE = 100000;
 
+class Logger {
+    public static forPlugin(info: ts.server.PluginCreateInfo) {
+        return new Logger(info.project.projectService.logger);
+    }
+
+    private constructor(
+        private readonly _logger: ts.server.Logger
+    ) { }
+
+    public info(message: string) {
+        this._logger.info(`[${pluginId}] ${JSON.stringify(message)}`);
+    }
+}
+
 function init(modules: { typescript: typeof ts_module }) {
     const ts = modules.typescript;
 
@@ -62,7 +76,9 @@ function init(modules: { typescript: typeof ts_module }) {
     }
 
     function create(info: ts.server.PluginCreateInfo) {
-        info.project.projectService.logger.info("tslint-language-service loaded");
+        const logger = Logger.forPlugin(info);
+
+        logger.info('loaded');
         let config: Settings = fixRelativeConfigFilePath(info.config, info.project.getCurrentDirectory());
         let configuration: tslint.Configuration.IConfigurationFile = null;
 
@@ -88,18 +104,18 @@ function init(modules: { typescript: typeof ts_module }) {
         // Watch config file for changes
         if (info.project instanceof ts.server.ConfiguredProject) {
             const configFile = info.project.getConfigFilePath();
-            info.project.projectService.logger.info(`Found configured project: ${configFile}`);
+            logger.info(`Found configured project: ${configFile}`);
 
             ts.sys.watchFile(configFile, (_fileName: string, eventKind: ts.FileWatcherEventKind) => {
                 if (eventKind !== ts.FileWatcherEventKind.Changed) {
                     return;
                 }
 
-                info.project.projectService.logger.info(`Config file changed`);
+                logger.info('Config file changed');
 
                 const configFileResult = ts.readConfigFile(configFile, ts.sys.readFile);
                 if (configFileResult.error || !configFileResult.config) {
-                    info.project.projectService.logger.info(`Error reading config file: ${configFileResult.error}`);
+                    logger.info(`Error reading config file: ${configFileResult.error}`);
                     return;
                 }
 
@@ -112,7 +128,7 @@ function init(modules: { typescript: typeof ts_module }) {
                     return;
                 }
 
-                info.project.projectService.logger.info(`Updating config settings: ${JSON.stringify(pluginSettings)}`);
+                logger.info(`Updating config settings: ${JSON.stringify(pluginSettings)}`);
                 config = fixRelativeConfigFilePath(pluginSettings, info.project.getCurrentDirectory());
                 info.project.refreshDiagnostics();
             });
@@ -247,7 +263,7 @@ function init(modules: { typescript: typeof ts_module }) {
         
         function captureWarnings(message?: any): void {
             // TODO log to a user visible log and not only the TS-Server log
-            info.project.projectService.logger.info(`[tslint] ${message}`);
+            logger.info(`[tslint] ${message}`);
         }
 
         function convertReplacementToTextChange(repl: tslint.Replacement): ts.TextChange {
@@ -385,7 +401,7 @@ function init(modules: { typescript: typeof ts_module }) {
             }
 
             try {
-                info.project.projectService.logger.info(`Computing tslint semantic diagnostics...`);
+                logger.info(`Computing tslint semantic diagnostics...`);
                 if (codeFixActions.has(fileName)) {
                     codeFixActions.delete(fileName);
                 }
@@ -399,7 +415,7 @@ function init(modules: { typescript: typeof ts_module }) {
                 } catch (err) {
                     // TODO: show the reason for the configuration failure to the user and not only in the log
                     // https://github.com/Microsoft/TypeScript/issues/15913
-                    info.project.projectService.logger.info(getConfigurationFailureMessage(err))
+                    logger.info(getConfigurationFailureMessage(err))
                     return prior;
                 }
 

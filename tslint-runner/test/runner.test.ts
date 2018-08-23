@@ -144,6 +144,19 @@ describe('TSLintRunner', () => {
             expect(filteredFailures.length).to.equal(0);
         });
     });
+
+    describe('getNonOverlappingReplacements', () => {
+        it('should filter out overlapping replacements', () => { 
+            const runner = createTsLintRunner();
+            const filePath = path.join(testDataRoot, 'overlapping-errors', 'test.ts');
+            const result = runner.runTsLint(filePath, fs.readFileSync(filePath).toString(), {} as RunConfiguration);
+
+            expect(result.lintResult.failures.length).to.equal(2);
+
+            const noOverlappingReplacements = runner.getNonOverlappingReplacements(result.lintResult.failures);
+            expect(noOverlappingReplacements.length).to.equal(1);
+        });
+    });
 });
 
 function createTsLintRunner() {

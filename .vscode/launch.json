@@ -15,7 +15,8 @@
                "--timeout",
                "999999",
                "--colors",
-               "${workspaceFolder}/tslint-runner/out/test"
+               "${workspaceFolder}/tslint-runner/out/test",
+               "-g", "getNonOverlappingReplacements"
            ],
            "internalConsoleOptions": "openOnSessionStart"
        }

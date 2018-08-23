@@ -265,7 +265,7 @@ function init(modules: { typescript: typeof ts_module }) {
         }
 
         function addAllAutoFixable(fixes: ts_module.CodeAction[], documentFixes: Map<string, tslint.RuleFailure>, fileName: string) {
-            const allReplacements = getNonOverlappingReplacements(documentFixes);
+            const allReplacements = runner.getNonOverlappingReplacements(Array.from(documentFixes.values()));
             fixes.push({
                 description: `Fix all auto-fixable tslint failures`,
                 changes: [{
@@ -383,31 +383,4 @@ function getReplacements(fix: tslint.Fix | undefined): tslint.Replacement[] {
         }
     }
     return replacements || [];
-}
-
-function getReplacement(failure: tslint.RuleFailure, at: number): tslint.Replacement {
-    return getReplacements(failure.getFix())[at];
-}
-
-function sortFailures(failures: tslint.RuleFailure[]): tslint.RuleFailure[] {
-    // The failures.replacements are sorted by position, we sort on the position of the first replacement
-    return failures.sort((a, b) => {
-        return getReplacement(a, 0).start - getReplacement(b, 0).start;
-    });
-}
-
-function getNonOverlappingReplacements(documentFixes: Map<string, tslint.RuleFailure>): tslint.Replacement[] {
-    function overlaps(a: tslint.Replacement, b: tslint.Replacement): boolean {
-        return a.end >= b.start;
-    }
-
-    let sortedFailures = sortFailures([...documentFixes.values()]);
-    let nonOverlapping: tslint.Replacement[] = [];
-    for (let i = 0; i < sortedFailures.length; i++) {
-        let replacements = getReplacements(sortedFailures[i].getFix());
-        if (i === 0 || !overlaps(nonOverlapping[nonOverlapping.length - 1], replacements[0])) {
-            nonOverlapping.push(...replacements)
-        }
-    }
-    return nonOverlapping;
 }

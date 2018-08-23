@@ -6,6 +6,7 @@ import * as tslint from 'tslint'; // this is a dev dependency only
 import * as typescript from 'typescript'; // this is a dev dependency only
 import * as util from 'util';
 import * as server from 'vscode-languageserver';
+import { MruCache } from './mruCache';
 
 export interface RunConfiguration {
     readonly jsEnable?: boolean;
@@ -77,11 +78,11 @@ const emptyResult: RunResult = {
 };
 
 export class TsLintRunner {
-    private readonly tslintPath2Library: Map<string, typeof tslint | undefined> = new Map();
-    private readonly document2Library: Map<string, () => typeof tslint | undefined> = new Map();
+    private readonly tslintPath2Library = new Map<string, typeof tslint | undefined>();
+    private readonly document2LibraryCache = new MruCache<() => typeof tslint | undefined>(100);
 
     // map stores undefined values to represent failed resolutions
-    private readonly globalPackageManagerPath: Map<string, string> = new Map();
+    private readonly globalPackageManagerPath = new Map<string, string>();
     private readonly configCache = new ConfigCache();
 
     constructor(
@@ -99,16 +100,16 @@ export class TsLintRunner {
 
         const warnings: string[] = [];
 
-        if (!this.document2Library.has(filePath)) {
+        if (!this.document2LibraryCache.has(filePath)) {
             this.loadLibrary(filePath, configuration, warnings);
         }
         this.trace('validateTextDocument: loaded tslint library');
 
-        if (!this.document2Library.has(filePath)) {
+        if (!this.document2LibraryCache.has(filePath)) {
             return emptyResult;
         }
 
-        const library = this.document2Library.get(filePath)!();
+        const library = this.document2LibraryCache.get(filePath)!();
         if (!library) {
             return {
                 lintResult: emptyLintResult,
@@ -148,6 +149,50 @@ export class TsLintRunner {
         this.configCache.flush();
     }
 
+    public getNonOverlappingReplacements(failures: tslint.RuleFailure[]): tslint.Replacement[] {
+        function overlaps(a: tslint.Replacement, b: tslint.Replacement): boolean {
+            return a.end >= b.start;
+        }
+
+        let sortedFailures = this.sortFailures(failures);
+        let nonOverlapping: tslint.Replacement[] = [];
+        for (let i = 0; i < sortedFailures.length; i++) {
+            let replacements = this.getReplacements(sortedFailures[i].getFix());
+            if (i === 0 || !overlaps(nonOverlapping[nonOverlapping.length - 1], replacements[0])) {
+                nonOverlapping.push(...replacements)
+            }
+        }
+        return nonOverlapping;
+    }
+
+    private getReplacements(fix: tslint.Fix | undefined): tslint.Replacement[] {
+        let replacements: tslint.Replacement[] | null = null;
+        // in tslint4 a Fix has a replacement property with the Replacements
+        if ((<any>fix).replacements) {
+            // tslint4
+            replacements = (<any>fix).replacements;
+        } else {
+            // in tslint 5 a Fix is a Replacement | Replacement[]                  
+            if (!Array.isArray(fix)) {
+                replacements = [<any>fix];
+            } else {
+                replacements = fix;
+            }
+        }
+        return replacements || [];
+    }
+
+    private getReplacement(failure: tslint.RuleFailure, at: number): tslint.Replacement {
+        return this.getReplacements(failure.getFix())[at];
+    }
+
+    private sortFailures(failures: tslint.RuleFailure[]): tslint.RuleFailure[] {
+        // The failures.replacements are sorted by position, we sort on the position of the first replacement
+        return failures.sort((a, b) => {
+            return this.getReplacement(a, 0).start - this.getReplacement(b, 0).start;
+        });
+    }
+
     private loadLibrary(filePath: string, configuration: RunConfiguration, warningsOutput: string[]): void {
         this.trace(`loadLibrary for ${filePath}`);
         const getGlobalPath = () => this.getGlobalPackageManagerPath(configuration.packageManager);
@@ -169,7 +214,6 @@ export class TsLintRunner {
             try {
                 tsLintPath = this.resolveTsLint(np, np!);
             } catch {
-
                 tsLintPath = this.resolveTsLint(getGlobalPath(), directory);
             }
         } else {
@@ -180,7 +224,7 @@ export class TsLintRunner {
             }
         }
 
-        this.document2Library.set(filePath, () => {
+        this.document2LibraryCache.set(filePath, () => {
             let library;
             if (!this.tslintPath2Library.has(tsLintPath)) {
                 try {
@@ -218,7 +262,7 @@ export class TsLintRunner {
     private doRun(
         filePath: string,
         contents: string | typescript.Program,
-        library: typeof import ('tslint'),
+        library: typeof import('tslint'),
         configuration: RunConfiguration,
         warnings: string[],
     ): RunResult {

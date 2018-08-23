@@ -1,0 +1,12 @@
+{
+    "rules": {
+        "ordered-imports": true,
+        "trailing-comma": [
+            true,
+            {
+                "multiline": "always",
+                "singleline": "never"
+            }
+        ]
+    }
+}

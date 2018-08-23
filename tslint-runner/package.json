@@ -1,7 +1,7 @@
 {
   "name": "typescript-tslint-runner",
   "version": "0.0.1",
-  "description": "TypeScript tslint runner",
+  "description": "Helper library for running TSLint",
   "main": "out/src/runner.js",
   "author": "Microsoft",
   "license": "MIT",
@@ -13,7 +13,7 @@
     "prepublish": "node node_modules/typescript/lib/tsc",
     "compile": "node node_modules/typescript/lib/tsc",
     "test": "./node_modules/.bin/mocha ./out/test/",
-    "lint": "tslint src/index.ts"
+    "lint": "tslint src/*.ts"
   },
   "dependencies": {
     "minimatch": "^3.0.4",

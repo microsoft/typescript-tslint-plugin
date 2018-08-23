@@ -1,0 +1,5 @@
+.npmignore
+/test-data
+/out/test
+/out/**/*.map
+tsconfig.json

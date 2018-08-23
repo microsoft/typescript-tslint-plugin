@@ -1,11 +1,11 @@
+import * as cp from 'child_process';
+import * as fs from 'fs';
+import * as minimatch from 'minimatch';
+import * as path from 'path';
 import * as tslint from 'tslint'; // this is a dev dependency only
 import * as typescript from 'typescript'; // this is a dev dependency only
-import * as server from 'vscode-languageserver';
-import * as path from 'path';
-import * as fs from 'fs';
 import * as util from 'util';
-import * as minimatch from 'minimatch';
-import * as cp from 'child_process';
+import * as server from 'vscode-languageserver';
 
 export interface RunConfiguration {
     readonly jsEnable?: boolean;
@@ -26,34 +26,29 @@ interface Configuration {
 }
 
 class ConfigCache {
-    private filePath: string | undefined;
     public configuration: Configuration | undefined;
+
+    private filePath: string | undefined;
 
     constructor() {
         this.filePath = undefined;
         this.configuration = undefined;
     }
 
-    set(path: string, configuration: Configuration) {
-        this.filePath = path;
+    public set(filePath: string, configuration: Configuration) {
+        this.filePath = filePath;
         this.configuration = configuration;
     }
 
-    get(forPath: string): Configuration | undefined {
-        if (forPath === this.filePath) {
-            return this.configuration;
-        }
-        return undefined;
+    public get(forPath: string): Configuration | undefined {
+        return forPath === this.filePath ? this.configuration : undefined;
     }
 
-    isDefaultLinterConfig(): boolean {
-        if (this.configuration) {
-            return this.configuration.isDefaultLinterConfig;
-        }
-        return false;
+    public isDefaultLinterConfig(): boolean {
+        return !!(this.configuration && this.configuration.isDefaultLinterConfig);
     }
 
-    flush() {
+    public flush() {
         this.filePath = undefined;
         this.configuration = undefined;
     }
@@ -71,28 +66,30 @@ const emptyLintResult: tslint.LintResult = {
     failures: [],
     fixes: [],
     format: '',
-    output: ''
+    output: '',
 };
 
 const emptyResult: RunResult = {
     lintResult: emptyLintResult,
-    warnings: []
+    warnings: [],
 };
 
 export class TsLintRunner {
     private readonly tslintPath2Library: Map<string, typeof tslint | undefined> = new Map();
     private readonly document2Library: Map<string, () => typeof tslint | undefined> = new Map();
-    private readonly globalPackageManagerPath: Map<string, string> = new Map();  // map stores undefined values to represent failed resolutions
+
+    // map stores undefined values to represent failed resolutions
+    private readonly globalPackageManagerPath: Map<string, string> = new Map();
     private readonly configCache = new ConfigCache();
 
     constructor(
-        private trace: (data: string) => void
+        private trace: (data: string) => void,
     ) { }
 
     public runTsLint(
         filePath: string,
         contents: string | typescript.Program,
-        configuration: RunConfiguration
+        configuration: RunConfiguration,
     ): RunResult {
         this.trace('start validateTextDocument');
 
@@ -113,12 +110,36 @@ export class TsLintRunner {
         if (!library) {
             return {
                 lintResult: emptyLintResult,
-                warnings: [getInstallFailureMessage(filePath, configuration.workspaceFolderPath, configuration.packageManager || 'npm')]
-            }
+                warnings: [
+                    getInstallFailureMessage(
+                        filePath,
+                        configuration.workspaceFolderPath,
+                        configuration.packageManager || 'npm'),
+                ],
+            };
         }
 
         this.trace('About to validate ' + filePath);
         return this.doRun(filePath, contents, library, configuration, warnings);
+    }
+
+    /**
+     * Filter failures for the given document
+     */
+    public filterProblemsForFile(
+        filePath: string,
+        failures: tslint.RuleFailure[],
+    ): tslint.RuleFailure[] {
+        const normalizedPath = path.normalize(filePath);
+        // we only show diagnostics targetting this open document, some tslint rule return diagnostics for other documents/files
+        const normalizedFiles = new Map<string, string>();
+        return failures.filter((each) => {
+            const fileName = each.getFileName();
+            if (!normalizedFiles.has(fileName)) {
+                normalizedFiles.set(fileName, path.normalize(fileName));
+            }
+            return normalizedFiles.get(fileName) === normalizedPath;
+        });
     }
 
     private loadLibrary(filePath: string, configuration: RunConfiguration, warningsOutput: string[]): void {
@@ -147,7 +168,7 @@ export class TsLintRunner {
             }
         } else {
             try {
-                tsLintPath = this.resolveTsLint(undefined, directory)
+                tsLintPath = this.resolveTsLint(undefined, directory);
             } catch {
                 tsLintPath = this.resolveTsLint(getGlobalPath(), directory);
             }
@@ -191,9 +212,9 @@ export class TsLintRunner {
     private doRun(
         filePath: string,
         contents: string | typescript.Program,
-        library: typeof import('tslint'),
+        library: typeof import ('tslint'),
         configuration: RunConfiguration,
-        warnings: string[]
+        warnings: string[],
     ): RunResult {
         this.trace('start doValidate ' + filePath);
         const uri = filePath;
@@ -218,7 +239,7 @@ export class TsLintRunner {
             warnings.push(getConfigurationFailureMessage(err));
             return {
                 lintResult: emptyLintResult,
-                warnings
+                warnings,
             };
         }
 
@@ -248,7 +269,7 @@ export class TsLintRunner {
             formatter: "json",
             fix: false,
             rulesDirectory: configuration.rulesDirectory || undefined,
-            formattersDirectory: undefined
+            formattersDirectory: undefined,
         };
         if (configuration.traceLevel && configuration.traceLevel === 'verbose') {
             this.traceConfigurationFile(linterConfiguration.linterConfiguration);
@@ -274,8 +295,8 @@ export class TsLintRunner {
 
         return {
             lintResult: result,
-            warnings: warnings,
-            workspaceFolderPath: configuration.workspaceFolderPath
+            warnings,
+            workspaceFolderPath: configuration.workspaceFolderPath,
         };
     }
 
@@ -298,54 +319,35 @@ export class TsLintRunner {
 
         // between tslint 4.0.1 and tslint 4.0.2 the attribute 'error' has been removed from IConfigurationLoadResult
         // in 4.0.2 findConfiguration throws an exception as in version ^3.0.0
-        if ((<any>configurationResult).error) {
-            throw (<any>configurationResult).error;
+        if (configurationResult.error) {
+            throw configurationResult.error;
         }
         linterConfiguration = configurationResult.results;
 
         const configuration: Configuration = {
             isDefaultLinterConfig: isDefaultConfig,
-            linterConfiguration: linterConfiguration,
+            linterConfiguration,
         };
 
         this.configCache.set(filePath, configuration);
         return this.configCache.configuration;
     }
 
-    /**
-     * Filter failures for the given document
-     */
-    public filterProblemsForFile(
-        filePath: string,
-        failures: tslint.RuleFailure[]
-    ): tslint.RuleFailure[] {
-        const normalizedPath = path.normalize(filePath);
-        // we only show diagnostics targetting this open document, some tslint rule return diagnostics for other documents/files
-        const normalizedFiles = new Map<string, string>();
-        return failures.filter(each => {
-            const fileName = each.getFileName();
-            if (!normalizedFiles.has(fileName)) {
-                normalizedFiles.set(fileName, path.normalize(fileName));
-            }
-            return normalizedFiles.get(fileName) === normalizedPath;
-        });
-    }
-
-    private fileIsExcluded(settings: RunConfiguration, path: string): boolean {
+    private fileIsExcluded(settings: RunConfiguration, filePath: string): boolean {
         if (settings.ignoreDefinitionFiles) {
-            if (path.endsWith('.d.ts')) {
+            if (filePath.endsWith('.d.ts')) {
                 return true;
             }
         }
 
         if (settings.exclude) {
             if (Array.isArray(settings.exclude)) {
-                for (let pattern of settings.exclude) {
-                    if (testForExclusionPattern(path, pattern)) {
+                for (const pattern of settings.exclude) {
+                    if (testForExclusionPattern(filePath, pattern)) {
                         return true;
                     }
                 }
-            } else if (testForExclusionPattern(path, <string>settings.exclude)) {
+            } else if (testForExclusionPattern(filePath, settings.exclude)) {
                 return true;
             }
         }
@@ -363,39 +365,38 @@ export class TsLintRunner {
     private resolveTsLint(nodePath: string | undefined, cwd: string): string {
         const nodePathKey = 'NODE_PATH';
         const app = [
-            "console.log(require.resolve('tslint'));"
+            "console.log(require.resolve('tslint'));",
         ].join('');
 
-        let env = process.env;
-        let newEnv = Object.create(null);
+        const env = process.env;
+        const newEnv = Object.create(null);
         Object.keys(env).forEach(key => newEnv[key] = env[key]);
         if (nodePath) {
             if (newEnv[nodePathKey]) {
                 newEnv[nodePathKey] = nodePath + path.delimiter + newEnv[nodePathKey];
-            }
-            else {
+            } else {
                 newEnv[nodePathKey] = nodePath;
             }
             this.trace(`NODE_PATH value is: ${newEnv[nodePathKey]}`);
         }
-        newEnv['ELECTRON_RUN_AS_NODE'] = '1';
+        newEnv.ELECTRON_RUN_AS_NODE = '1';
         const spanwResults = cp.spawnSync(process.argv0, ['-e', app], { cwd, env: newEnv });
         return spanwResults.stdout.toString().trim();
     }
 }
 
-function testForExclusionPattern(path: string, pattern: string): boolean {
-    return minimatch(path, pattern, { dot: true });
+function testForExclusionPattern(filePath: string, pattern: string): boolean {
+    return minimatch(filePath, pattern, { dot: true });
 }
 
 function getInstallFailureMessage(filePath: string, workspaceFolder: string | undefined, packageManager: 'npm' | 'yarn'): string {
-    let localCommands = {
+    const localCommands = {
         npm: 'npm install tslint',
-        yarn: 'yarn add tslint'
+        yarn: 'yarn add tslint',
     };
-    let globalCommands = {
+    const globalCommands = {
         npm: 'npm install -g tslint',
-        yarn: 'yarn global add tslint'
+        yarn: 'yarn global add tslint',
     };
     if (workspaceFolder) { // workspace opened on a folder
         return [
@@ -420,19 +421,20 @@ function isJsDocument(filePath: string) {
     return filePath.match(/\.jsx?$/i);
 }
 
-function isExcludedFromLinterOptions(config: tslint.Configuration.IConfigurationFile | undefined, fileName: string): boolean {
+function isExcludedFromLinterOptions(
+    config: tslint.Configuration.IConfigurationFile | undefined,
+    fileName: string,
+): boolean {
     if (config === undefined || config.linterOptions === undefined || config.linterOptions.exclude === undefined) {
         return false;
     }
     return config.linterOptions.exclude.some((pattern) => testForExclusionPattern(fileName, pattern));
 }
 
-
 function getConfigurationFailureMessage(err: any): string {
     let errorMessage = `unknown error`;
     if (typeof err.message === 'string' || err.message instanceof String) {
-        errorMessage = <string>err.message;
+        errorMessage = err.message;
     }
     return `vscode-tslint: Cannot read tslint configuration - '${errorMessage}'`;
 }
-

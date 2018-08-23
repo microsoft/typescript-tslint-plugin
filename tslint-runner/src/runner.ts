@@ -23,6 +23,7 @@ export interface RunConfiguration {
 interface Configuration {
     readonly linterConfiguration: tslint.Configuration.IConfigurationFile | undefined;
     isDefaultLinterConfig: boolean;
+    readonly path?: string;
 }
 
 class ConfigCache {
@@ -45,10 +46,7 @@ class ConfigCache {
     }
 
     public isDefaultLinterConfig(): boolean {
-        if (this.configuration) {
-            return this.configuration.isDefaultLinterConfig;
-        }
-        return false;
+        return !!(this.configuration && this.configuration.isDefaultLinterConfig);
     }
 
     public flush() {
@@ -61,6 +59,7 @@ export interface RunResult {
     readonly lintResult: tslint.LintResult;
     readonly warnings: string[];
     readonly workspaceFolderPath?: string;
+    readonly configFilePath?: string;
 }
 
 const emptyLintResult: tslint.LintResult = {
@@ -143,6 +142,10 @@ export class TsLintRunner {
             }
             return normalizedFiles.get(fileName) === normalizedPath;
         });
+    }
+
+    public onConfigFileChange(_tsLintFilePath: string) {
+        this.configCache.flush();
     }
 
     private loadLibrary(filePath: string, configuration: RunConfiguration, warningsOutput: string[]): void {
@@ -300,10 +303,11 @@ export class TsLintRunner {
             lintResult: result,
             warnings,
             workspaceFolderPath: configuration.workspaceFolderPath,
+            configFilePath: linterConfiguration.path,
         };
     }
 
-    private getConfiguration(uri: string, filePath: string, library: any, configFileName: string | null): Configuration | undefined {
+    private getConfiguration(uri: string, filePath: string, library: typeof tslint, configFileName: string | null): Configuration | undefined {
         this.trace('getConfiguration for' + uri);
 
         const config = this.configCache.get(filePath);
@@ -322,14 +326,15 @@ export class TsLintRunner {
 
         // between tslint 4.0.1 and tslint 4.0.2 the attribute 'error' has been removed from IConfigurationLoadResult
         // in 4.0.2 findConfiguration throws an exception as in version ^3.0.0
-        if (configurationResult.error) {
-            throw configurationResult.error;
+        if ((configurationResult as any).error) {
+            throw (configurationResult as any).error;
         }
         linterConfiguration = configurationResult.results;
 
         const configuration: Configuration = {
             isDefaultLinterConfig: isDefaultConfig,
             linterConfiguration,
+            path: configurationResult.path
         };
 
         this.configCache.set(filePath, configuration);

@@ -65,13 +65,6 @@ function init(modules: { typescript: typeof ts_module }) {
 
     let codeFixActions = new Map<string, Map<string, tslint.RuleFailure>>();
 
-    let configCache = {
-        filePath: null as string | null,
-        configuration: null as any,
-        isDefaultConfig: false,
-        configFilePath: null as string | null
-    };
-
     const getSupportedCodeFixes = ts.getSupportedCodeFixes.bind(ts);
     ts.getSupportedCodeFixes = () => {
         return getSupportedCodeFixes().concat(TSLINT_ERROR_CODE);
@@ -148,9 +141,9 @@ function init(modules: { typescript: typeof ts_module }) {
         }
 
         // tslint:disable-next-line:no-unused-expression
-        new ConfigFileWatcher(ts, _filePath => {
+        const configFileWatcher = new ConfigFileWatcher(ts, filePath => {
             logger.info('TSlint file changed');
-            configCache.configuration = null;
+            runner.onConfigFileChange(filePath);
             info.project.refreshDiagnostics();
         });
 
@@ -271,20 +264,6 @@ function init(modules: { typescript: typeof ts_module }) {
             });
         }
 
-        function addOpenConfigurationFix(fixes: ts_module.CodeAction[]) {
-            // the Open Configuration code action is disabled since there is no specified API to open an editor
-            let openConfigFixEnabled = false;
-            if (openConfigFixEnabled && configCache && configCache.configFilePath) {
-                fixes.push({
-                    description: `Open tslint.json`,
-                    changes: [{
-                        fileName: configCache.configFilePath,
-                        textChanges: []
-                    }]
-                });
-            }
-        }
-
         function addAllAutoFixable(fixes: ts_module.CodeAction[], documentFixes: Map<string, tslint.RuleFailure>, fileName: string) {
             const allReplacements = getNonOverlappingReplacements(documentFixes);
             fixes.push({
@@ -320,6 +299,9 @@ function init(modules: { typescript: typeof ts_module }) {
                         configFile: config.configFile,
                         ignoreDefinitionFiles: config.ignoreDefinitionFiles
                     });
+                    if (result.configFilePath) {
+                        configFileWatcher.ensureWatching(result.configFilePath);
+                    }
                 } catch (err) {
                     let errorMessage = `unknown error`;
                     if (typeof err.message === 'string' || err.message instanceof String) {
@@ -371,7 +353,6 @@ function init(modules: { typescript: typeof ts_module }) {
                 }
                 addAllAutoFixable(fixes, documentFixes, fileName);
                 if (problem) {
-                    addOpenConfigurationFix(fixes);
                     addDisableRuleFix(fixes, problem, fileName, oldLS.getProgram()!.getSourceFile(fileName)!);
                 }
 

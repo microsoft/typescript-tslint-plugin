@@ -23,7 +23,8 @@ describe('TSLintRunner', () => {
         });
 
         it('should return an error for test file', () => {
-            const filePath = path.join(testDataRoot, 'with-tslint', 'test.ts');
+            const folderPath = path.join(testDataRoot, 'with-tslint')
+            const filePath = path.join(folderPath, 'test.ts');
             const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), {} as RunConfiguration);
 
             expect(result.lintResult.errorCount).to.equal(1);
@@ -36,6 +37,8 @@ describe('TSLintRunner', () => {
             const fix = firstFailure.getFix();
             expect(fix).to.not.equal(undefined);
             expect(fix!.length).to.equal(2);
+
+            expect(result.configFilePath).to.equal(path.join(folderPath, 'tslint.json'));
         });
 
         it('should not validate using if no tslint.json exists and validateWithDefaultConfig is false', () => {

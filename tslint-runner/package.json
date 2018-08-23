@@ -12,8 +12,8 @@
   "scripts": {
     "prepublish": "node node_modules/typescript/lib/tsc",
     "compile": "node node_modules/typescript/lib/tsc",
-    "test": "./node_modules/.bin/mocha ./out/test/",
-    "lint": "tslint src/*.ts"
+    "test": "./node_modules/.bin/mocha ./out/test",
+    "lint": "tslint -c tslint.src.json src/*.ts"
   },
   "dependencies": {
     "minimatch": "^3.0.4",

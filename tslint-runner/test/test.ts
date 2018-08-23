@@ -1,8 +1,8 @@
-import 'mocha'
 import { expect } from 'chai';
-import { TsLintRunner, RunConfiguration } from '../src/runner';
-import * as path from 'path';
 import * as fs from 'fs';
+import 'mocha';
+import * as path from 'path';
+import { RunConfiguration, TsLintRunner } from '../src/runner';
 
 const testDataRoot = path.join(__dirname, '..', '..', 'test-data');
 
@@ -41,7 +41,7 @@ describe('TSLintRunner', () => {
         it('should not validate using if no tslint.json exists and validateWithDefaultConfig is false', () => {
             const filePath = path.join(testDataRoot, 'no-tslint', 'test.ts');
             const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), {
-                validateWithDefaultConfig: false
+                validateWithDefaultConfig: false,
             } as RunConfiguration);
 
             expect(result.lintResult.errorCount).to.equal(0);
@@ -65,7 +65,7 @@ describe('TSLintRunner', () => {
         it('should not return any errors for excluded file', () => {
             const filePath = path.join(testDataRoot, 'with-tslint', 'test.ts');
             const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), {
-                exclude: [filePath]
+                exclude: [filePath],
             } as RunConfiguration);
 
             expect(result.lintResult.errorCount).to.equal(0);
@@ -75,7 +75,7 @@ describe('TSLintRunner', () => {
             const workspacePath = path.join(testDataRoot, 'with-tslint');
             const filePath = path.join(workspacePath, 'test.ts');
             const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), {
-                workspaceFolderPath: workspacePath
+                workspaceFolderPath: workspacePath,
             } as RunConfiguration);
 
             expect(result.lintResult.errorCount).to.equal(1);
@@ -112,7 +112,7 @@ describe('TSLintRunner', () => {
         it('should not return errors in excluded file', () => {
             const root = path.join(testDataRoot, 'with-tslint');
             const filePath = path.join(root, 'excluded.ts');
-            const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), { } as RunConfiguration);
+            const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), {} as RunConfiguration);
 
             expect(result.lintResult.errorCount).to.equal(0);
         });
@@ -120,8 +120,8 @@ describe('TSLintRunner', () => {
         it('should generate warning for invalid node path', () => {
             const root = path.join(testDataRoot, 'with-tslint');
             const filePath = path.join(root, 'test.ts');
-            const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), { 
-                nodePath: 'invalid'
+            const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), {
+                nodePath: 'invalid',
             } as RunConfiguration);
 
             expect(result.lintResult.errorCount).to.equal(1);
@@ -144,5 +144,5 @@ describe('TSLintRunner', () => {
 });
 
 function createTsLintRunner() {
-    return new TsLintRunner((_value: string) => { });
+    return new TsLintRunner((_value: string) => { /* noop */ });
 }

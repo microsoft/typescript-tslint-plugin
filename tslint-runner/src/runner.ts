@@ -45,7 +45,10 @@ class ConfigCache {
     }
 
     public isDefaultLinterConfig(): boolean {
-        return !!(this.configuration && this.configuration.isDefaultLinterConfig);
+        if (this.configuration) {
+            return this.configuration.isDefaultLinterConfig;
+        }
+        return false;
     }
 
     public flush() {

@@ -1,0 +1,24 @@
+{
+	"compilerOptions": {
+		"target": "es6",
+		"module": "commonjs",
+		"inlineSourceMap": true,
+		"inlineSources": true,
+		"outDir": "out",
+		"noImplicitAny": true,
+		"noUnusedParameters": true,
+		"noUnusedLocals": true,
+		"lib": [
+			"es6"
+		],
+		"strict": true,
+		"declaration": true
+	},
+	"exclude": [
+		"node_modules",
+		"dev",
+		"out",
+		"test-data"
+	],
+	"compileOnSave": true
+}

@@ -1,0 +1,16 @@
+{
+    "rules": {
+        "array-type": [
+            true,
+            "array-simple"
+        ]
+    },
+    "jsRules": {
+        "triple-equals": true
+    },
+    "linterOptions": {
+        "exclude": [
+            "excluded.ts"
+        ]
+    }
+}

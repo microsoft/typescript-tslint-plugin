@@ -1,0 +1,36 @@
+{
+  "name": "typescript-tslint-runner",
+  "version": "0.0.1",
+  "description": "TypeScript tslint language service plugin",
+  "main": "out/src/runner.js",
+  "author": "Microsoft",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/microsoft/typescript-tslint-plugin.git"
+  },
+  "scripts": {
+    "prepublish": "node node_modules/typescript/lib/tsc",
+    "compile": "node node_modules/typescript/lib/tsc",
+    "devtest": "tsc && copyfiles out/src/index.js dev/node_modules/tslint-language-service",
+    "publish": "node ./scripts/git-tag.js",
+    "test": "tsc && tape out/test/**/*.spec.js",
+    "lint": "tslint src/index.ts"
+  },
+  "dependencies": {
+    "minimatch": "^3.0.4",
+    "vscode-languageserver": "^5.0.3"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.1.4",
+    "@types/minimatch": "^3.0.3",
+    "@types/mocha": "^5.2.5",
+    "@types/node": "^7.0.8",
+    "chai": "^4.1.2",
+    "copyfiles": "^1.2.0",
+    "mocha": "^5.2.0",
+    "tape": "^4.6.3",
+    "tslint": "^5.2.0",
+    "typescript": "^3.0.1"
+  }
+}

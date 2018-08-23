@@ -3,6 +3,8 @@ import * as tslint from 'tslint';
 import * as path from 'path';
 import * as mockRequire from 'mock-require';
 
+import { TsLintRunner, RunResult } from '../tslint-runner'
+
 // Settings for the plugin section in tsconfig.json
 interface Settings {
     alwaysShowRuleFailuresAsWarnings?: boolean;
@@ -91,12 +93,12 @@ function init(modules: { typescript: typeof ts_module }) {
 
         logger.info('loaded');
         let config: Settings = fixRelativeConfigFilePath(info.config, info.project.getCurrentDirectory());
-        let configuration: tslint.Configuration.IConfigurationFile | null = null;
 
         if (config.mockTypeScriptVersion) {
             mockRequire('typescript', ts);
         }
-        const tslint = require('tslint')
+
+        const runner = new TsLintRunner(() => { });
 
         // Set up decorator
         const proxy = Object.create(null) as ts.LanguageService;
@@ -145,7 +147,8 @@ function init(modules: { typescript: typeof ts_module }) {
             });
         }
 
-        const configFileWatcher = new ConfigFileWatcher(ts, _filePath => {
+        // tslint:disable-next-line:no-unused-expression
+        new ConfigFileWatcher(ts, _filePath => {
             logger.info('TSlint file changed');
             configCache.configuration = null;
             info.project.refreshDiagnostics();
@@ -176,22 +179,6 @@ function init(modules: { typescript: typeof ts_module }) {
                 code: TSLINT_ERROR_CODE
             };
             return diagnostic;
-        }
-
-        /**
-         * Filter failures for the given document
-         */
-        function filterProblemsForDocument(documentPath: string, failures: tslint.RuleFailure[]): tslint.RuleFailure[] {
-            let normalizedPath = path.normalize(documentPath);
-            // we only show diagnostics targetting this open document, some tslint rule return diagnostics for other documents/files
-            let normalizedFiles = new Map<string, string>();
-            return failures.filter(each => {
-                let fileName = each.getFileName();
-                if (!normalizedFiles.has(fileName)) {
-                    normalizedFiles.set(fileName, path.normalize(fileName));
-                }
-                return normalizedFiles.get(fileName) === normalizedPath;
-            });
         }
 
         function replacementsAreEmpty(fix: tslint.Fix | undefined): boolean {
@@ -226,90 +213,11 @@ function init(modules: { typescript: typeof ts_module }) {
             documentAutoFixes.set(computeKey(problem.getStartPosition().getPosition(), problem.getEndPosition().getPosition()), problem);
         }
 
-        function getConfigurationFailureMessage(err: any): string {
-            let errorMessage = `unknown error`;
-            if (typeof err.message === 'string' || err.message instanceof String) {
-                errorMessage = <string>err.message;
-            }
-            return `tslint: Cannot read tslint configuration - '${errorMessage}'`;
-        }
-
-        function getConfiguration(filePath: string, configFileName: string | undefined): any {
-            if (configCache.configuration && configCache.filePath === filePath) {
-                return configCache.configuration;
-            }
-
-            let isDefaultConfig = false;
-            let configuration;
-            let configFilePath = null;
-
-            isDefaultConfig = tslint.Configuration.findConfigurationPath(configFileName, filePath) === undefined;
-            let configurationResult = tslint.Configuration.findConfiguration(configFileName, filePath);
-
-            // between tslint 4.0.1 and tslint 4.0.2 the attribute 'error' has been removed from IConfigurationLoadResult
-            // in 4.0.2 findConfiguration throws an exception as in version ^3.0.0
-            if ((<any>configurationResult).error) {
-                throw (<any>configurationResult).error;
-            }
-            configuration = configurationResult.results;
-
-            // In tslint version 5 the 'no-unused-variable' rules breaks the TypeScript language service plugin.
-            // See https://github.com/Microsoft/TypeScript/issues/15344
-            // Therefore we remove the rule from the configuration.
-            //
-            // In tslint 5 the rules are stored in a Map, in earlier versions they were stored in an Object
-            if (config.disableNoUnusedVariableRule === true || config.disableNoUnusedVariableRule === undefined) {
-                if (configuration.rules && configuration.rules instanceof Map) {
-                    configuration.rules.delete('no-unused-variable');
-                }
-                if (configuration.jsRules && configuration.jsRules instanceof Map) {
-                    configuration.jsRules.delete('no-unused-variable');
-                }
-            }
-
-            configFilePath = configurationResult.path;
-
-            configCache = {
-                filePath: filePath,
-                isDefaultConfig: isDefaultConfig,
-                configuration: configuration,
-                configFilePath: configFilePath
-            };
-
-            if (configFilePath) {
-                configFileWatcher.ensureWatching(configFilePath);
-            }
-
-            return configCache.configuration;
-        }
-
-        function captureWarnings(message?: any): void {
-            // TODO log to a user visible log and not only the TS-Server log
-            logger.info(`[tslint] ${message}`);
-        }
-
         function convertReplacementToTextChange(repl: tslint.Replacement): ts.TextChange {
             return {
                 newText: repl.text,
                 span: { start: repl.start, length: repl.length }
             };
-        }
-
-        function getReplacements(fix: tslint.Fix | undefined): tslint.Replacement[] {
-            let replacements: tslint.Replacement[] | null = null;
-            // in tslint4 a Fix has a replacement property with the Replacements
-            if ((<any>fix).replacements) {
-                // tslint4
-                replacements = (<any>fix).replacements;
-            } else {
-                // in tslint 5 a Fix is a Replacement | Replacement[]                  
-                if (!Array.isArray(fix)) {
-                    replacements = [<any>fix];
-                } else {
-                    replacements = fix;
-                }
-            }
-            return replacements || [];
         }
 
         function problemToFileTextChange(problem: tslint.RuleFailure, fileName: string): ts_module.FileTextChanges {
@@ -388,32 +296,6 @@ function init(modules: { typescript: typeof ts_module }) {
             });
         }
 
-        function getReplacement(failure: tslint.RuleFailure, at: number): tslint.Replacement {
-            return getReplacements(failure.getFix())[at];
-        }
-
-        function sortFailures(failures: tslint.RuleFailure[]): tslint.RuleFailure[] {
-            // The failures.replacements are sorted by position, we sort on the position of the first replacement
-            return failures.sort((a, b) => {
-                return getReplacement(a, 0).start - getReplacement(b, 0).start;
-            });
-        }
-
-        function getNonOverlappingReplacements(documentFixes: Map<string, tslint.RuleFailure>): tslint.Replacement[] {
-            function overlaps(a: tslint.Replacement, b: tslint.Replacement): boolean {
-                return a.end >= b.start;
-            }
-
-            let sortedFailures = sortFailures([...documentFixes.values()]);
-            let nonOverlapping: tslint.Replacement[] = [];
-            for (let i = 0; i < sortedFailures.length; i++) {
-                let replacements = getReplacements(sortedFailures[i].getFix());
-                if (i === 0 || !overlaps(nonOverlapping[nonOverlapping.length - 1], replacements[0])) {
-                    nonOverlapping.push(...replacements)
-                }
-            }
-            return nonOverlapping;
-        }
 
         proxy.getSemanticDiagnostics = (fileName: string) => {
             const prior = oldLS.getSemanticDiagnostics(fileName);
@@ -432,29 +314,12 @@ function init(modules: { typescript: typeof ts_module }) {
                     return prior;
                 }
 
-                try {
-                    configuration = getConfiguration(fileName, config.configFile);
-                } catch (err) {
-                    // TODO: show the reason for the configuration failure to the user and not only in the log
-                    // https://github.com/Microsoft/TypeScript/issues/15913
-                    logger.info(getConfigurationFailureMessage(err))
-                    return prior;
-                }
-
-                let result: tslint.LintResult;
-
-                // tslint writes warning messages using console.warn()
-                // capture the warnings and write them to the tslint plugin log
-                let warn = console.warn;
-                console.warn = captureWarnings;
-
+                let result: RunResult;
                 try { // protect against tslint crashes
-                    // TODO the types of the Program provided by tsserver libary are not compatible with the one provided by typescript
-                    // casting away the type
-                    let options: tslint.ILinterOptions = { fix: false };
-                    let linter = new tslint.Linter(options, <any>oldLS.getProgram());
-                    linter.lint(fileName, "", configuration);
-                    result = linter.getResult();
+                    result = runner.runTsLint(fileName, oldLS.getProgram() || '', {
+                        configFile: config.configFile,
+                        ignoreDefinitionFiles: config.ignoreDefinitionFiles
+                    });
                 } catch (err) {
                     let errorMessage = `unknown error`;
                     if (typeof err.message === 'string' || err.message instanceof String) {
@@ -462,12 +327,14 @@ function init(modules: { typescript: typeof ts_module }) {
                     }
                     info.project.projectService.logger.info('tslint error ' + errorMessage);
                     return prior;
-                } finally {
-                    console.warn = warn;
                 }
 
-                if (result.failures.length > 0) {
-                    const tslintProblems = filterProblemsForDocument(fileName, result.failures);
+                for (const warning of result.warnings) {
+                    logger.info(`[tslint] ${warning}`);
+                }
+
+                if (result.lintResult.failures.length > 0) {
+                    const tslintProblems = runner.filterProblemsForFile(fileName, result.lintResult.failures);
                     if (tslintProblems && tslintProblems.length) {
                         const file = oldLS.getProgram()!.getSourceFile(fileName)!;
                         const diagnostics = prior ? [...prior] : [];
@@ -518,5 +385,48 @@ function init(modules: { typescript: typeof ts_module }) {
 
     return { create };
 }
-
 export = init;
+
+function getReplacements(fix: tslint.Fix | undefined): tslint.Replacement[] {
+    let replacements: tslint.Replacement[] | null = null;
+    // in tslint4 a Fix has a replacement property with the Replacements
+    if ((<any>fix).replacements) {
+        // tslint4
+        replacements = (<any>fix).replacements;
+    } else {
+        // in tslint 5 a Fix is a Replacement | Replacement[]                  
+        if (!Array.isArray(fix)) {
+            replacements = [<any>fix];
+        } else {
+            replacements = fix;
+        }
+    }
+    return replacements || [];
+}
+
+function getReplacement(failure: tslint.RuleFailure, at: number): tslint.Replacement {
+    return getReplacements(failure.getFix())[at];
+}
+
+function sortFailures(failures: tslint.RuleFailure[]): tslint.RuleFailure[] {
+    // The failures.replacements are sorted by position, we sort on the position of the first replacement
+    return failures.sort((a, b) => {
+        return getReplacement(a, 0).start - getReplacement(b, 0).start;
+    });
+}
+
+function getNonOverlappingReplacements(documentFixes: Map<string, tslint.RuleFailure>): tslint.Replacement[] {
+    function overlaps(a: tslint.Replacement, b: tslint.Replacement): boolean {
+        return a.end >= b.start;
+    }
+
+    let sortedFailures = sortFailures([...documentFixes.values()]);
+    let nonOverlapping: tslint.Replacement[] = [];
+    for (let i = 0; i < sortedFailures.length; i++) {
+        let replacements = getReplacements(sortedFailures[i].getFix());
+        if (i === 0 || !overlaps(nonOverlapping[nonOverlapping.length - 1], replacements[0])) {
+            nonOverlapping.push(...replacements)
+        }
+    }
+    return nonOverlapping;
+}

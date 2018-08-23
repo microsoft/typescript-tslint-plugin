@@ -3,7 +3,8 @@
         "array-type": [
             true,
             "array-simple"
-        ]
+        ],
+        "no-unused-variable": true
     },
     "jsRules": {
         "triple-equals": true

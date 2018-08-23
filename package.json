@@ -16,11 +16,9 @@
     "lint": "tslint src/index.ts"
   },
   "dependencies": {
-    "mock-require": "^2.0.2"
   },
   "devDependencies": {
     "@types/node": "^7.0.8",
-    "@types/mock-require": "^2.0.0",
     "tslint": "^5.2.0",
     "typescript": "^3.0.1" 
   },

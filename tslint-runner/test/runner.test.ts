@@ -130,6 +130,15 @@ describe('TSLintRunner', () => {
             expect(result.lintResult.errorCount).to.equal(1);
             expect(result.warnings.length).to.equal(1);
         });
+
+        it('should ignore no-unused-varaible rule', () => {
+            const root = path.join(testDataRoot, 'with-tslint');
+            const filePath = path.join(root, 'unused-variable.ts');
+            const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), { } as RunConfiguration);
+
+            expect(result.lintResult.errorCount).to.equal(0);
+            expect(result.warnings.length).to.equal(0);
+        });
     });
 
     describe('filterProblemsForFile', () => {

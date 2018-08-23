@@ -1,7 +1,6 @@
 import * as ts_module from "../node_modules/typescript/lib/tsserverlibrary";
 import * as tslint from 'tslint';
 import * as path from 'path';
-import * as mockRequire from 'mock-require';
 
 import { TsLintRunner, RunResult } from '../tslint-runner'
 
@@ -12,7 +11,6 @@ interface Settings {
     configFile?: string;
     disableNoUnusedVariableRule?: boolean  // support to enable/disable the workaround for https://github.com/Microsoft/TypeScript/issues/15344
     supressWhileTypeErrorsPresent: boolean;
-    mockTypeScriptVersion: boolean;
 }
 
 const pluginId = 'tslint-language-service';
@@ -86,10 +84,6 @@ function init(modules: { typescript: typeof ts_module }) {
 
         logger.info('loaded');
         let config: Settings = fixRelativeConfigFilePath(info.config, info.project.getCurrentDirectory());
-
-        if (config.mockTypeScriptVersion) {
-            mockRequire('typescript', ts);
-        }
 
         const runner = new TsLintRunner(() => { });
 

@@ -375,6 +375,20 @@ export class TsLintRunner {
         }
         linterConfiguration = configurationResult.results;
 
+        // In tslint version 5 the 'no-unused-variable' rules breaks the TypeScript language service plugin.
+        // See https://github.com/Microsoft/TypeScript/issues/15344
+        // Therefore we remove the rule from the configuration.
+        //
+        // In tslint 5 the rules are stored in a Map, in earlier versions they were stored in an Object
+        if (linterConfiguration && false) {
+            if (linterConfiguration.rules && linterConfiguration.rules instanceof Map) {
+                linterConfiguration.rules.delete('no-unused-variable');
+            }
+            if (linterConfiguration.jsRules && linterConfiguration.jsRules instanceof Map) {
+                linterConfiguration.jsRules.delete('no-unused-variable');
+            }
+        }
+
         const configuration: Configuration = {
             isDefaultLinterConfig: isDefaultConfig,
             linterConfiguration,

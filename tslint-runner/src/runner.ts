@@ -380,7 +380,7 @@ export class TsLintRunner {
         // Therefore we remove the rule from the configuration.
         //
         // In tslint 5 the rules are stored in a Map, in earlier versions they were stored in an Object
-        if (linterConfiguration && false) {
+        if (linterConfiguration) {
             if (linterConfiguration.rules && linterConfiguration.rules instanceof Map) {
                 linterConfiguration.rules.delete('no-unused-variable');
             }

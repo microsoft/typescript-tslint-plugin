@@ -10,12 +10,14 @@
     "url": "https://github.com/microsoft/typescript-tslint-plugin.git"
   },
   "scripts": {
-    "prepublish": "(cd tslint-runner && npm run prepublish) && node node_modules/typescript/lib/tsc",
-    "compile": "(cd tslint-runner && npm run compile) && node node_modules/typescript/lib/tsc",
+    "prepublish": "(cd tslint-runner && npm run prepublish) && npm run compile",
+    "compile": "tsc",
     "test": "(cd tslint-runner && npm run test)",
     "lint": "tslint src/index.ts"
   },
-  "dependencies": {},
+  "dependencies": {
+    "typescript-tslint-runner": "file:./tslint-runner"
+  },
   "devDependencies": {
     "@types/node": "^8.0.0",
     "tslint": "^5.11.0",

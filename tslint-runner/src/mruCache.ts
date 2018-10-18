@@ -4,8 +4,8 @@ export class MruCache<T> {
     private readonly _entries = new Set<string>();
 
     public constructor(
-        private readonly _maxSize: number 
-    ) {}
+        private readonly _maxSize: number
+    ) { }
 
     public set(filePath: string, entry: T): void {
         this._map.set(filePath, entry);
@@ -22,7 +22,7 @@ export class MruCache<T> {
     public has(filePath: string): boolean {
         return this._map.has(filePath);
     }
-    
+
     public get(filePath: string): (T) | undefined {
         if (this._entries.has(filePath)) {
             this._entries.delete(filePath);

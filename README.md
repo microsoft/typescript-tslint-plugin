@@ -117,12 +117,12 @@ Please also see our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## VS Code
 
-To test the newly compiled program, open the `dev` folder in VS Code and use the TypeScript version picker to [switch to the local version of TypeScript](https://code.visualstudio.com/Docs/languages/typescript#_using-newer-typescript-versions).
+To test the newly compiled program, open the `test-workspace` folder in VS Code and use the TypeScript version picker to [switch to the local version of TypeScript](https://code.visualstudio.com/Docs/languages/typescript#_using-newer-typescript-versions).
 
 To debug you use two versions of VS Code, e.g., the stable and the insider version. The idea is that one of them is configured to support attaching a debugger to the Typescript language server:
 
 - Use the insider version for development and open it on the typescript-tslint-plugin workspace.
-- Use the stable version for debugging opened on the `dev` folder of the tslint-language service.
+- Use the stable version for debugging opened on the `test-workspace` folder of the tslint-language service.
 
 To setup the stable version for debugging, you need to set the environment variable `TSS_DEBUG` to port 5859. In a command prompt/shell:
 

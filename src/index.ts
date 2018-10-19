@@ -16,6 +16,7 @@ interface Settings {
 const pluginId = 'tslint-language-service';
 
 const TSLINT_ERROR_CODE = 100000;
+const TSLINT_ERROR_SOURCE = 'tslint';
 
 class Logger {
     public static forPlugin(info: ts.server.PluginCreateInfo) {
@@ -154,7 +155,7 @@ function init(modules: { typescript: typeof ts_module }) {
                 length: problem.getEndPosition().getPosition() - problem.getStartPosition().getPosition(),
                 messageText: message,
                 category: category,
-                source: 'tslint',
+                source: TSLINT_ERROR_SOURCE,
                 code: TSLINT_ERROR_CODE
             };
         }
@@ -270,12 +271,11 @@ function init(modules: { typescript: typeof ts_module }) {
             });
         }
 
-
         proxy.getSemanticDiagnostics = (fileName: string) => {
-            const prior = oldLS.getSemanticDiagnostics(fileName);
+            const diagnostics = oldLS.getSemanticDiagnostics(fileName);
 
-            if (config.supressWhileTypeErrorsPresent && prior.length > 0) {
-                return prior;
+            if (config.supressWhileTypeErrorsPresent && diagnostics.length > 0) {
+                return diagnostics;
             }
 
             try {
@@ -285,7 +285,7 @@ function init(modules: { typescript: typeof ts_module }) {
                 }
 
                 if (config.ignoreDefinitionFiles === true && fileName.endsWith('.d.ts')) {
-                    return prior;
+                    return diagnostics;
                 }
 
                 let result: RunResult;
@@ -303,30 +303,35 @@ function init(modules: { typescript: typeof ts_module }) {
                         errorMessage = <string>err.message;
                     }
                     info.project.projectService.logger.info('tslint error ' + errorMessage);
-                    return prior;
+                    return diagnostics;
                 }
+
+                const file = oldLS.getProgram()!.getSourceFile(fileName)!;
 
                 for (const warning of result.warnings) {
                     logger.info(`[tslint] ${warning}`);
+                    diagnostics.push({
+                        code: TSLINT_ERROR_CODE,
+                        source: TSLINT_ERROR_SOURCE,
+                        category: ts.DiagnosticCategory.Error,
+                        file,
+                        start: 0,
+                        length: 1,
+                        messageText: warning,
+                    });
                 }
 
-                if (result.lintResult.failures.length > 0) {
-                    const tslintProblems = runner.filterProblemsForFile(fileName, result.lintResult.failures);
-                    if (tslintProblems && tslintProblems.length) {
-                        const file = oldLS.getProgram()!.getSourceFile(fileName)!;
-                        const diagnostics = prior ? [...prior] : [];
-                        tslintProblems.forEach(problem => {
-                            diagnostics.push(makeDiagnostic(problem, file));
-                            recordCodeAction(problem, file);
-                        });
-                        return diagnostics;
-                    }
+                const tslintProblems = runner.filterProblemsForFile(fileName, result.lintResult.failures);
+                for (const problem of tslintProblems) {
+                    diagnostics.push(makeDiagnostic(problem, file));
+                    recordCodeAction(problem, file);
                 }
             } catch (e) {
                 info.project.projectService.logger.info(`tslint-language service error: ${e.toString()}`);
                 info.project.projectService.logger.info(`Stack trace: ${e.stack}`);
             }
-            return prior;
+
+            return diagnostics;
         };
 
         proxy.getCodeFixesAtPosition = function (fileName: string, start: number, end: number, errorCodes: number[], formatOptions: ts.FormatCodeSettings, userPreferences: ts.UserPreferences): ReadonlyArray<ts.CodeFixAction> {

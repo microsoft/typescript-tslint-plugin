@@ -1,18 +1,16 @@
 # TypeScript TSLint Language Service Plugin
 
-
 <!-- 
 [![Build Status](https://secure.travis-ci.org/microsoft/typescript-tslint-plugin.png)](http://travis-ci.org/microsoft/typescript-tslint-plugin)
 [![NPM version](https://img.shields.io/npm/v/typescript-tslint-plugin.svg)](https://www.npmjs.org/package/typescript-tslint-plugin)   -->
 
 TypeScript [language service plugin](https://blogs.msdn.microsoft.com/typescript/2017/04/27/announcing-typescript-2-3/) for [tslint](https://github.com/palantir/tslint). 
 
-
 To use it the plugin:
 
- * install the plugin with `npm install typescript-tslint-plugin`
+ * Install the plugin with `npm install typescript-tslint-plugin`
  
- * enable the plugin in your `tsconfig.json` file:
+ * Enable the plugin in your `tsconfig.json` file:
 
 ```json
 {
@@ -28,7 +26,7 @@ To use it the plugin:
 
 ## Configuration options
 
-**Notice** this configuration settings allow you to configure the behaviour of the tslint-language-service plugin. To configure rules and tslint options you should use the `tslint.json` file.
+**Notice** this configuration settings allow you to configure the behaviour of the typescript-tslint-plugin itself. To configure rules and tslint options you should use the `tslint.json` file.
 
  * `configFile` - the configuration file that tslint should use instead of the default tslint.json. A relative file path is resolved relative to the project root.
  * `ignoreDefinitionFiles` - control if TypeScript definition files should be ignored.
@@ -43,7 +41,7 @@ Here a configuration sample:
 {
   "compilerOptions": {
     "plugins": [
-      { "name": "tslint-language-service",
+      { "name": "typescript-tslint-plugin",
         "alwaysShowRuleFailuresAsWarnings": false,
         "ignoreDefinitionFiles": true,
         "configFile": "../tslint.json",
@@ -66,7 +64,7 @@ This plugin requires TypeScript 2.4 or later. It can provide intellisense in bot
 You must manually install the plugin along side the version of TypeScript in your workspace:
 
 ```bash
-npm install --save-dev typescript-styled-plugin typescript
+npm install --save-dev typescript-tslint-plugin typescript
 ```
 
 Then add a `plugins` section to your [`tsconfig.json`](http://www.typescriptlang.org/docs/handbook/tsconfig-json.html) or [`jsconfig.json`](https://code.visualstudio.com/Docs/languages/javascript#_javascript-project-jsconfigjson)
@@ -76,7 +74,7 @@ Then add a `plugins` section to your [`tsconfig.json`](http://www.typescriptlang
   "compilerOptions": {
     "plugins": [
       {
-        "name": "typescript-styled-plugin"
+        "name": "typescript-tslint-plugin"
       }
     ]
   }
@@ -85,11 +83,11 @@ Then add a `plugins` section to your [`tsconfig.json`](http://www.typescriptlang
 
 Finally, run the `Select TypeScript version` command in VS Code to switch to use the workspace version of TypeScript for VS Code's JavaScript and TypeScript language support. You can find more information about managing typescript versions [in the VS Code documentation](https://code.visualstudio.com/Docs/languages/typescript#_using-newer-typescript-versions).
 
-The most important differences between the `vscode-tslint` extension and the `tslint-languageservice-plugin` are:
+The most important differences between the `vscode-tslint` extension and `typescript-tslint-plugin` are:
 
 * The plugin shares the program representation with TypeScript. This is more efficient than the `vscode-tslint` extension which needs 
   to reanalyze the document.
-* Since `vscode-tslint` lints one file a time only, it cannot support tslint rules that require the type checker. The language service plugin doesn't have this limitation.
+* Since `vscode-tslint` lints one file a time only, it cannot support tslint rules that require the type checker. The plugin doesn't have this limitation.
 * `vscode-tslint` provides additional [features](https://marketplace.visualstudio.com/items?itemName=eg2.tslint), please file issue requests for the features you are missing.
 
 
@@ -128,10 +126,10 @@ To debug you use two versions of VS Code, e.g., the stable and the insider versi
 
 To setup the stable version for debugging, you need to set the environment variable `TSS_DEBUG` to port 5859. In a command prompt/shell:
 
-  - make sure that the stable version isn't running already
-  - `set TSS_DEBUG=5859`
-  - cd to the `dev` folder
-  - `code .`
+- make sure that the stable version isn't running already
+- `set TSS_DEBUG=5859`
+- cd to the `dev` folder
+- `code .`
 
 To debug the tslint-language-service plugin press `F5`. The `dev` workspace has a launch configuration that attaches through port 5859 to the language server. 
 

@@ -6,7 +6,9 @@
 /out/test
 /out/**/*.map
 /images
+/test-data
 tsconfig.json
+tslint.json
 .travis.yml
 .project
 node_modules

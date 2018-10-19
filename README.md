@@ -6,36 +6,36 @@
 
 TypeScript [language service plugin](https://blogs.msdn.microsoft.com/typescript/2017/04/27/announcing-typescript-2-3/) for [tslint](https://github.com/palantir/tslint). 
 
-To use it the plugin:
+To use the plugin:
 
  * Install the plugin with `npm install typescript-tslint-plugin`
- 
+
  * Enable the plugin in your `tsconfig.json` file:
 
-```json
-{
-  "compilerOptions": {
-    "plugins": [
-      { "name": "typescript-tslint-plugin" }
-    ]
-  }
-}
-```
+    ```json
+    {
+      "compilerOptions": {
+        "plugins": [
+          { "name": "typescript-tslint-plugin" }
+        ]
+      }
+    }
+    ```
 
-**Notice** due to an issue in the implementation of the `no-unused-variable` rule ([issue[2469](https://github.com/palantir/tslint/issues/2649)]), this rule will be disabled by the plugin. You can use the typescript compiler options `noUnusedLocals` and `noUnusedParameters` instead. 
+**Notice** due to an issue in the implementation of the `no-unused-variable` rule ([palantir/tslint#2469](https://github.com/palantir/tslint/issues/2649)), this rule will be disabled by the plugin. You can use the typescript compiler options `noUnusedLocals` and `noUnusedParameters` instead. 
 
 ## Configuration options
 
-**Notice** this configuration settings allow you to configure the behaviour of the typescript-tslint-plugin itself. To configure rules and tslint options you should use the `tslint.json` file.
+**Notice:** This configuration settings allow you to configure the behaviour of the typescript-tslint-plugin itself. To configure rules and tslint options you should use the `tslint.json` file.
 
- * `configFile` - the configuration file that tslint should use instead of the default tslint.json. A relative file path is resolved relative to the project root.
- * `ignoreDefinitionFiles` - control if TypeScript definition files should be ignored.
- * `alwaysShowRuleFailuresAsWarnings` - always show rule failures as warnings, ignoring the severity configuration in the tslint.json configuration.
- * `disableNoUnusedVariableRule` - disable `no-unused-variable` rule.
- * `supressWhileTypeErrorsPresent` - supress tslint errors from being reported while other errors are present.
- * `mockTypeScriptVersion` - force tslint to use the same version of TypeScript as this plugin. This will affect other plugins that require the typescript package.
- 
-Here a configuration sample:
+ * `configFile` - The configuration file that tslint should use instead of the default tslint.json. A relative file path is resolved relative to the project root.
+ * `ignoreDefinitionFiles` - Control if TypeScript definition files should be ignored.
+ * `alwaysShowRuleFailuresAsWarnings` - Always show rule failures as warnings, ignoring the severity configuration in the tslint.json configuration.
+ * `disableNoUnusedVariableRule` - Disable `no-unused-variable` rule.
+ * `supressWhileTypeErrorsPresent` - Supress tslint errors from being reported while other errors are present.
+ * `mockTypeScriptVersion` - Force tslint to use the same version of TypeScript as this plugin. This will affect other plugins that require the typescript package.
+
+Here is a configuration sample:
 
 ```json
 {

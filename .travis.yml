@@ -1,3 +1,17 @@
 language: node_js
+
 node_js:
-    - "6"
+  - '9'
+
+sudo: false
+
+branches:
+  only:
+  - master
+
+install:
+  - npm install
+
+script:
+  - npm run compile
+  - npm run test

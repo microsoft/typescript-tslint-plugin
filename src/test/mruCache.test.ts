@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import 'mocha';
-import { MruCache } from '../src/mruCache';
+import { MruCache } from '../mruCache';
 
 describe('MruCache', () => {
     it('should remove old entries', () => {

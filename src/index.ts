@@ -2,7 +2,7 @@ import * as ts_module from '../node_modules/typescript/lib/tsserverlibrary';
 import * as tslint from 'tslint';
 import * as path from 'path';
 
-import { TsLintRunner, RunResult } from 'typescript-tslint-runner'
+import { TsLintRunner, RunResult } from './runner'
 
 // Settings for the plugin section in tsconfig.json
 interface Settings {

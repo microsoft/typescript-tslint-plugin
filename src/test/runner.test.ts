@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import * as fs from 'fs';
 import 'mocha';
 import * as path from 'path';
-import { RunConfiguration, TsLintRunner } from '../src/runner';
+import { RunConfiguration, TsLintRunner } from '../runner';
 
 const testDataRoot = path.join(__dirname, '..', '..', 'test-data');
 

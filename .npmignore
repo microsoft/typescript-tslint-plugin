@@ -9,3 +9,5 @@
 tsconfig.json
 .travis.yml
 .project
+node_modules
+*.test.js

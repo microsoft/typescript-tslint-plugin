@@ -8,6 +8,8 @@
 /images
 /test-data
 /test-workspace
+/documentation
+
 tsconfig.json
 tslint.json
 .travis.yml

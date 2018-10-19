@@ -4,13 +4,15 @@
 [![Build Status](https://secure.travis-ci.org/microsoft/typescript-tslint-plugin.png)](http://travis-ci.org/microsoft/typescript-tslint-plugin)
 [![NPM version](https://img.shields.io/npm/v/typescript-tslint-plugin.svg)](https://www.npmjs.org/package/typescript-tslint-plugin)   -->
 
-TypeScript [language service plugin](https://blogs.msdn.microsoft.com/typescript/2017/04/27/announcing-typescript-2-3/) for [tslint](https://github.com/palantir/tslint). 
+TypeScript [language service plugin](https://blogs.msdn.microsoft.com/typescript/2017/04/27/announcing-typescript-2-3/) for [TSLint][tslint]. 
 
 To use the plugin:
 
- * Install the plugin with `npm install typescript-tslint-plugin`
+* Install TSLint 5+ in your workspace or globally.
 
- * Enable the plugin in your `tsconfig.json` file:
+* Install the plugin with `npm install typescript-tslint-plugin`
+
+* Enable the plugin in your `tsconfig.json` file:
 
     ```json
     {
@@ -22,11 +24,11 @@ To use the plugin:
     }
     ```
 
-**Notice** due to an issue in the implementation of the `no-unused-variable` rule ([palantir/tslint#2469](https://github.com/palantir/tslint/issues/2649)), this rule will be disabled by the plugin. You can use the typescript compiler options `noUnusedLocals` and `noUnusedParameters` instead. 
+See [editor support](#editor-support) for more detailed setup instructions.
 
 ## Configuration options
 
-**Notice:** This configuration settings allow you to configure the behaviour of the typescript-tslint-plugin itself. To configure rules and tslint options you should use the `tslint.json` file.
+**Notice**: This configuration settings allow you to configure the behaviour of the typescript-tslint-plugin itself. To configure rules and tslint options you should use the `tslint.json` file.
 
  * `configFile` - The configuration file that tslint should use instead of the default tslint.json. A relative file path is resolved relative to the project root.
  * `ignoreDefinitionFiles` - Control if TypeScript definition files should be ignored.
@@ -41,7 +43,8 @@ Here is a configuration sample:
 {
   "compilerOptions": {
     "plugins": [
-      { "name": "typescript-tslint-plugin",
+      {
+        "name": "typescript-tslint-plugin",
         "alwaysShowRuleFailuresAsWarnings": false,
         "ignoreDefinitionFiles": true,
         "configFile": "../tslint.json",
@@ -54,11 +57,13 @@ Here is a configuration sample:
 }
 ```
 
-# Editors Support
-This plugin requires TypeScript 2.4 or later. It can provide intellisense in both JavaScript and TypeScript files within any editor that uses TypeScript to power their language features. This includes [VS Code](https://code.visualstudio.com), [Sublime with the TypeScript plugin](https://github.com/Microsoft/TypeScript-Sublime-Plugin), [Atom with the TypeScript plugin](https://atom.io/packages/atom-typescript), [Visual Studio](https://www.visualstudio.com), and others. 
+**Notice**: due to an issue in the implementation of the `no-unused-variable` rule ([palantir/tslint#2469](https://github.com/palantir/tslint/issues/2649)), this rule will be disabled by the plugin. You can use the typescript compiler options `noUnusedLocals` and `noUnusedParameters` instead. 
 
-## Visual Studio Code
 
+# Editor Support
+This plugin requires TypeScript 2.4 or later. It can provide intellisense in both JavaScript and TypeScript files within any editors that uses TypeScript to power their language features.
+
+## With VS Code
 *If you also have the [vscode-tslint](https://marketplace.visualstudio.com/items?itemName=eg2.tslint) extension in VS Code installed, please disable it to avoid that files are linted twice.*
 
 You must manually install the plugin along side the version of TypeScript in your workspace:
@@ -83,12 +88,99 @@ Then add a `plugins` section to your [`tsconfig.json`](http://www.typescriptlang
 
 Finally, run the `Select TypeScript version` command in VS Code to switch to use the workspace version of TypeScript for VS Code's JavaScript and TypeScript language support. You can find more information about managing typescript versions [in the VS Code documentation](https://code.visualstudio.com/Docs/languages/typescript#_using-newer-typescript-versions).
 
+![Usage with VS Code](documentation/example-vscode.png)
+
 The most important differences between the `vscode-tslint` extension and `typescript-tslint-plugin` are:
 
 * The plugin shares the program representation with TypeScript. This is more efficient than the `vscode-tslint` extension which needs 
   to reanalyze the document.
 * Since `vscode-tslint` lints one file a time only, it cannot support tslint rules that require the type checker. The plugin doesn't have this limitation.
 * `vscode-tslint` provides additional [features](https://marketplace.visualstudio.com/items?itemName=eg2.tslint), please file issue requests for the features you are missing.
+
+
+### With Atom
+This plugin works with the [Atom TypeScript plugin](https://atom.io/packages/atom-typescript).
+
+First install the plugin and a copy of TypeScript in your workspace:
+
+```bash
+npm install --save-dev typescript-tslint-plugin typescript
+```
+
+Then add a `plugins` section to your [`tsconfig.json`](http://www.typescriptlang.org/docs/handbook/tsconfig-json.html) or [`jsconfig.json`](https://code.visualstudio.com/Docs/languages/javascript#_javascript-project-jsconfigjson) and restart Atom.
+
+```json
+{
+  "compilerOptions": {
+    "plugins": [
+      {
+        "name": "typescript-tslint-plugin"
+      }
+    ]
+  }
+}
+```
+
+![Usage with atom](documentation/example-atom.png)
+
+
+### With Sublime
+This plugin works with the [Sublime TypeScript plugin](https://github.com/Microsoft/TypeScript-Sublime-Plugin).
+
+First install the plugin and a copy of TypeScript in your workspace:
+
+```bash
+npm install --save-dev typescript-tslint-plugin typescript
+```
+
+And configure Sublime to use the workspace version of TypeScript by [setting the `typescript_tsdk`](https://github.com/Microsoft/TypeScript-Sublime-Plugin#note-using-different-versions-of-typescript) setting in Sublime:
+
+```json
+{
+  "typescript_tsdk": "/Users/me/my-amazing-project/node_modules/typescript/lib"
+}
+```
+
+Finally add a `plugins` section to your [`tsconfig.json`](http://www.typescriptlang.org/docs/handbook/tsconfig-json.html) or [`jsconfig.json`](https://code.visualstudio.com/Docs/languages/javascript#_javascript-project-jsconfigjson) and restart Sublime.
+
+```json
+{
+  "compilerOptions": {
+    "plugins": [
+      {
+        "name": "typescript-tslint-plugin"
+      }
+    ]
+  }
+}
+```
+
+![Usage with Sublime](documentation/example-sublime.png)
+
+### With Visual Studio
+This plugin works [Visual Studio 2017](https://www.visualstudio.com) using the TypeScript 2.5+ SDK.
+
+First install the plugin in your project:
+
+```bash
+npm install --save-dev typescript-tslint-plugin
+```
+
+Then add a `plugins` section to your [`tsconfig.json`](http://www.typescriptlang.org/docs/handbook/tsconfig-json.html).
+
+```json
+{
+  "compilerOptions": {
+    "plugins": [
+      {
+        "name": "typescript-tslint-plugin"
+      }
+    ]
+  }
+}
+```
+
+Then reload your project to make sure the plugin has been loaded properly. Note that `jsconfig.json` projects are currently not supported in Visual Studio.
 
 
 # Contributing
@@ -133,7 +225,9 @@ To setup the stable version for debugging, you need to set the environment varia
 
 To debug the tslint-language-service plugin press `F5`. The `dev` workspace has a launch configuration that attaches through port 5859 to the language server. 
 
-
-## Credits
+# Credits
 
 This project was forked from  https://github.com/angelozerr/tslint-language-service which itself is based on https://github.com/Microsoft/vscode-tslint/
+
+
+[tslint]: https://github.com/palantir/tslint

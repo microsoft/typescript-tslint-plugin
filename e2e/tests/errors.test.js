@@ -2,7 +2,9 @@
 const assert = require('chai').assert;
 const path = require('path');
 const createServer = require('../server-fixture');
-const { openMockFile, getFirstResponseOfType, getResponsesOfType } = require('./helpers');
+const { openMockFile, getFirstResponseOfType } = require('./helpers');
+
+const tslintSource = 'tslint';
 
 const mockFileName = path.join(__dirname, '..', 'project-fixture', 'main.ts');
 
@@ -19,16 +21,47 @@ const getSemanticDiagnosticsForFile = (fileContents) => {
 describe('Errors', () => {
     it('array-type', async () => {
         const errorResponse = await getSemanticDiagnosticsForFile(
-            `let t: Array<string> = new Array<string>();
-let x: Array<string> = new Array<string>();
+            `let t: Array<string> = new Array<string>(); console.log(t);`);
 
-console.log(t, x);`);
         assert.isTrue(errorResponse.success);
-        assert.strictEqual(errorResponse.body.length, 2);
+        assert.strictEqual(errorResponse.body.length, 1);
 
-        const [error1, error2] = errorResponse.body;
-        assert.strictEqual(error1.source, 'tslint');
-        
-        assert.strictEqual(error2.source, 'tslint');
+        const [error1] = errorResponse.body;
+        assert.strictEqual(error1.source, tslintSource);
+        assertSpan(error1, { line: 1, offset: 8 }, { line: 1, offset: 21 });
+        assert.strictEqual(error1.text, `Array type using 'Array<T>' is forbidden for simple types. Use 'T[]' instead. (array-type)`);
+    });
+
+    it('arrow-parens', async () => {
+        const errorResponse = await getSemanticDiagnosticsForFile(
+            `[1, 2 ].map( num => console.log(num) );`);
+
+        assert.isTrue(errorResponse.success);
+        assert.strictEqual(errorResponse.body.length, 1);
+
+        const [error1] = errorResponse.body;
+        assert.strictEqual(error1.source, tslintSource);
+        assertSpan(error1, { line: 1, offset: 14 }, { line: 1, offset: 17 });
+        assert.strictEqual(error1.text, `Parentheses are required around the parameters of an arrow function definition (arrow-parens)`);
     });
 });
+
+/**
+ * @param {{ start: { line: number, offset: number }, end: { line: number, offset: number }}} span
+ * @param {{ line: number, offset: number }} start
+ * @param {{ line: number, offset: number }} end
+ */
+function assertSpan(span, start, end) {
+    assertPosition(span.start, start.line, start.offset);
+    assertPosition(span.end, end.line, end.offset);
+}
+
+/**
+ * @param {{ line: number, offset: number }} pos
+ * @param {number} line 
+ * @param {number} offset
+ */
+function assertPosition(pos, line, offset) {
+    assert.strictEqual(pos.line, line);
+    assert.strictEqual(pos.offset, offset);
+}

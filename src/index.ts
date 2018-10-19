@@ -142,21 +142,13 @@ function init(modules: { typescript: typeof ts_module }) {
         });
 
         function makeDiagnostic(problem: tslint.RuleFailure, file: ts.SourceFile): ts.Diagnostic {
-            let message = (problem.getRuleName() !== null)
+            const message = (problem.getRuleName() !== null)
                 ? `${problem.getFailure()} (${problem.getRuleName()})`
                 : `${problem.getFailure()}`;
 
-            let category;
-            if (config.alwaysShowRuleFailuresAsWarnings === true) {
-                category = ts.DiagnosticCategory.Warning;
-            } else if ((<any>problem).getRuleSeverity && (<any>problem).getRuleSeverity() === 'error') {
-                // tslint5 supports to assign severities to rules
-                category = ts.DiagnosticCategory.Error;
-            } else {
-                category = ts.DiagnosticCategory.Warning;
-            }
+            const category = getDiagnosticCategory(problem);
 
-            let diagnostic: ts.Diagnostic = {
+            return {
                 file: file,
                 start: problem.getStartPosition().getPosition(),
                 length: problem.getEndPosition().getPosition() - problem.getStartPosition().getPosition(),
@@ -165,7 +157,16 @@ function init(modules: { typescript: typeof ts_module }) {
                 source: 'tslint',
                 code: TSLINT_ERROR_CODE
             };
-            return diagnostic;
+        }
+
+        function getDiagnosticCategory(problem: tslint.RuleFailure): ts.DiagnosticCategory {
+            if (config.alwaysShowRuleFailuresAsWarnings === true) {
+                return ts.DiagnosticCategory.Warning;
+            } else if (problem.getRuleSeverity && problem.getRuleSeverity() === 'error') {
+                // tslint5 supports to assign severities to rules
+                return ts.DiagnosticCategory.Error;
+            }
+            return ts.DiagnosticCategory.Warning;
         }
 
         function replacementsAreEmpty(fix: tslint.Fix | undefined): boolean {

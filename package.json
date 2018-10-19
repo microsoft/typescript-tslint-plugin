@@ -12,8 +12,9 @@
   "scripts": {
     "prepublish": "npm run compile",
     "compile": "tsc",
-    "test": "./node_modules/.bin/mocha ./out/test",
-    "lint": "tslint src/index.ts"
+    "test": "mocha ./out/test",
+    "lint": "tslint src/index.ts",
+    "e2e": "mocha ./e2e/tests/**/*.test.js --slow 2000 --timeout 10000"
   },
   "dependencies": {
     "minimatch": "^3.0.4",

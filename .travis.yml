@@ -10,8 +10,13 @@ branches:
   - master
 
 install:
-  - npm install
+  - npm install 
+  - (cd e2e ; npm install)
 
 script:
   - npm run compile
   - npm run test
+  - npm run e2e
+
+after_failure:
+  - cat e2e/server-fixture/server.log

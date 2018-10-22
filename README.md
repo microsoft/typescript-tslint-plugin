@@ -157,6 +157,32 @@ Finally add a `plugins` section to your [`tsconfig.json`](http://www.typescriptl
 
 ![Usage with Sublime](documentation/example-sublime.png)
 
+### With Visual Studio
+This plugin works [Visual Studio 2017](https://www.visualstudio.com) using the TypeScript 2.5+ SDK.
+
+First install the plugin in your project:
+
+```bash
+npm install --save-dev typescript-tslint-plugin
+```
+
+Then add a `plugins` section to your [`tsconfig.json`](http://www.typescriptlang.org/docs/handbook/tsconfig-json.html).
+
+```json
+{
+  "compilerOptions": {
+    "plugins": [
+      {
+        "name": "typescript-tslint-plugin"
+      }
+    ]
+  }
+}
+```
+
+Then reload your project to make sure the plugin has been loaded properly. Note that `jsconfig.json` projects are currently not supported in Visual Studio.
+
+
 # Contributing
 To build the typescript-tslint-plugin, you'll need [Git](https://git-scm.com/downloads) and [Node.js](https://nodejs.org/).
 

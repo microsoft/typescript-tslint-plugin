@@ -13,6 +13,8 @@
 tsconfig.json
 tslint.json
 .travis.yml
+.vscode
 .project
 node_modules
 *.test.js
+*.js.map

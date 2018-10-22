@@ -2,8 +2,7 @@
 	"compilerOptions": {
 		"target": "es6",
 		"module": "commonjs",
-		"inlineSourceMap": true,
-		"inlineSources": true,
+		"sourceMap": true,
 		"outDir": "out",
 		"noImplicitAny": true,
 		"noUnusedParameters": true,

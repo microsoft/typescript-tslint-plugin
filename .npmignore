@@ -9,6 +9,7 @@
 /test-data
 /test-workspace
 /documentation
+/e2e
 
 tsconfig.json
 tslint.json

@@ -62,7 +62,7 @@ class ConfigFileWatcher {
 function init(modules: { typescript: typeof ts_module }) {
     const ts = modules.typescript;
 
-    let codeFixActions = new Map<string, Map<string, tslint.RuleFailure>>();
+    const codeFixActions = new Map<string, Map<string, tslint.RuleFailure>>();
 
     const getSupportedCodeFixes = ts.getSupportedCodeFixes.bind(ts);
     ts.getSupportedCodeFixes = () => {
@@ -82,6 +82,7 @@ function init(modules: { typescript: typeof ts_module }) {
 
     function create(info: ts.server.PluginCreateInfo) {
         const logger = Logger.forPlugin(info);
+        const project = info.project;
 
         logger.info('loaded');
         let config: Settings = fixRelativeConfigFilePath(info.config, info.project.getCurrentDirectory());
@@ -290,7 +291,7 @@ function init(modules: { typescript: typeof ts_module }) {
 
                 let result: RunResult;
                 try { // protect against tslint crashes
-                    result = runner.runTsLint(fileName, oldLS.getProgram() || '', {
+                    result = runner.runTsLint(fileName, getProgram(), {
                         configFile: config.configFile,
                         ignoreDefinitionFiles: config.ignoreDefinitionFiles
                     });
@@ -306,7 +307,7 @@ function init(modules: { typescript: typeof ts_module }) {
                     return diagnostics;
                 }
 
-                const file = oldLS.getProgram()!.getSourceFile(fileName)!;
+                const file = getProgram().getSourceFile(fileName)!;
 
                 for (const warning of result.warnings) {
                     logger.info(`[tslint] ${warning}`);
@@ -353,7 +354,7 @@ function init(modules: { typescript: typeof ts_module }) {
                 }
                 addAllAutoFixable(fixes, documentFixes, fileName);
                 if (problem) {
-                    addDisableRuleFix(fixes, problem, fileName, oldLS.getProgram()!.getSourceFile(fileName)!);
+                    addDisableRuleFix(fixes, problem, fileName, getProgram().getSourceFile(fileName)!);
                 }
 
                 return fixes;
@@ -362,6 +363,10 @@ function init(modules: { typescript: typeof ts_module }) {
             return prior;
         };
         return proxy;
+
+        function getProgram() {
+            return project.getLanguageService().getProgram()!;
+        }
     }
 
     return { create };

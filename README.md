@@ -66,7 +66,9 @@ This plugin requires TypeScript 2.4 or later. It can provide intellisense in bot
 ## With VS Code
 *If you also have the [vscode-tslint](https://marketplace.visualstudio.com/items?itemName=eg2.tslint) extension in VS Code installed, please disable it to avoid that files are linted twice.*
 
-You must manually install the plugin along side the version of TypeScript in your workspace:
+The simplest way to use this plugin is to install the (TypeScript TSLint Plugin VS Code extension)[https://marketplace.visualstudio.com/items?itemName=ms-vscode.vscode-typescript-tslint-plugin]. This extension enables the plugin when using VS Code's version of TypeScript.
+
+If you are using a workspace version of TypeScript, you must manually install the plugin alongside the version of TypeScript in your workspace:
 
 ```bash
 npm install --save-dev typescript-tslint-plugin typescript

@@ -2,7 +2,7 @@
 import * as cp from 'child_process';
 import * as fs from 'fs';
 import * as minimatch from 'minimatch';
-import * as path from 'path';
+import { normalize, dirname, delimiter } from 'path';
 import * as tslint from 'tslint'; // this is a dev dependency only
 import * as typescript from 'typescript'; // this is a dev dependency only
 import * as util from 'util';
@@ -134,13 +134,13 @@ export class TsLintRunner {
         filePath: string,
         failures: tslint.RuleFailure[],
     ): tslint.RuleFailure[] {
-        const normalizedPath = path.normalize(filePath);
+        const normalizedPath = normalize(filePath);
         // we only show diagnostics targetting this open document, some tslint rule return diagnostics for other documents/files
         const normalizedFiles = new Map<string, string>();
-        return failures.filter((each) => {
+        return failures.filter(each => {
             const fileName = each.getFileName();
             if (!normalizedFiles.has(fileName)) {
-                normalizedFiles.set(fileName, path.normalize(fileName));
+                normalizedFiles.set(fileName, normalize(fileName));
             }
             return normalizedFiles.get(fileName) === normalizedPath;
         });
@@ -155,12 +155,12 @@ export class TsLintRunner {
             return a.end >= b.start;
         }
 
-        let sortedFailures = this.sortFailures(failures);
-        let nonOverlapping: tslint.Replacement[] = [];
+        const sortedFailures = this.sortFailures(failures);
+        const nonOverlapping: tslint.Replacement[] = [];
         for (let i = 0; i < sortedFailures.length; i++) {
-            let replacements = this.getReplacements(sortedFailures[i].getFix());
+            const replacements = this.getReplacements(sortedFailures[i].getFix());
             if (i === 0 || !overlaps(nonOverlapping[nonOverlapping.length - 1], replacements[0])) {
-                nonOverlapping.push(...replacements)
+                nonOverlapping.push(...replacements);
             }
         }
         return nonOverlapping;
@@ -169,13 +169,13 @@ export class TsLintRunner {
     private getReplacements(fix: tslint.Fix | undefined): tslint.Replacement[] {
         let replacements: tslint.Replacement[] | null = null;
         // in tslint4 a Fix has a replacement property with the Replacements
-        if ((<any>fix).replacements) {
+        if ((fix as any).replacements) {
             // tslint4
-            replacements = (<any>fix).replacements;
+            replacements = (fix as any).replacements;
         } else {
-            // in tslint 5 a Fix is a Replacement | Replacement[]                  
+            // in tslint 5 a Fix is a Replacement | Replacement[]
             if (!Array.isArray(fix)) {
-                replacements = [<any>fix];
+                replacements = [fix as any];
             } else {
                 replacements = fix;
             }
@@ -197,9 +197,9 @@ export class TsLintRunner {
     private loadLibrary(filePath: string, configuration: RunConfiguration, warningsOutput: string[]): void {
         this.trace(`loadLibrary for ${filePath}`);
         const getGlobalPath = () => this.getGlobalPackageManagerPath(configuration.packageManager);
-        const directory = path.dirname(filePath);
+        const directory = dirname(filePath);
 
-        let np: string | undefined = undefined;
+        let np: string | undefined;
         if (configuration && configuration.nodePath) {
             const exists = fs.existsSync(configuration.nodePath);
             if (exists) {
@@ -269,7 +269,7 @@ export class TsLintRunner {
     private doRun(
         filePath: string,
         contents: string | typescript.Program,
-        library: typeof import('tslint'),
+        library: typeof import ('tslint'),
         configuration: RunConfiguration,
         warnings: string[],
     ): RunResult {
@@ -341,10 +341,10 @@ export class TsLintRunner {
         console.warn = captureWarnings;
 
         try { // clean up if tslint crashes
-            const tslint = new library.Linter(options, typeof contents === 'string' ? undefined : contents);
+            const linter = new library.Linter(options, typeof contents === 'string' ? undefined : contents);
             this.trace(`Linting: start linting`);
-            tslint.lint(filePath, typeof contents === 'string' ? contents : '', linterConfiguration.linterConfiguration);
-            result = tslint.getResult();
+            linter.lint(filePath, typeof contents === 'string' ? contents : '', linterConfiguration.linterConfiguration);
+            result = linter.getResult();
             this.trace(`Linting: ended linting`);
         } finally {
             console.warn = originalConsoleWarn;
@@ -367,7 +367,7 @@ export class TsLintRunner {
         }
 
         let isDefaultConfig = false;
-        let linterConfiguration: tslint.Configuration.IConfigurationFile | undefined = undefined;
+        let linterConfiguration: tslint.Configuration.IConfigurationFile | undefined;
 
         const linter = library.Linter;
         if (linter.findConfigurationPath) {
@@ -399,7 +399,7 @@ export class TsLintRunner {
         const configuration: Configuration = {
             isDefaultLinterConfig: isDefaultConfig,
             linterConfiguration,
-            path: configurationResult.path
+            path: configurationResult.path,
         };
 
         this.configCache.set(filePath, configuration);
@@ -446,7 +446,7 @@ export class TsLintRunner {
         Object.keys(env).forEach(key => newEnv[key] = env[key]);
         if (nodePath) {
             if (newEnv[nodePathKey]) {
-                newEnv[nodePathKey] = nodePath + path.delimiter + newEnv[nodePathKey];
+                newEnv[nodePathKey] = nodePath + delimiter + newEnv[nodePathKey];
             } else {
                 newEnv[nodePathKey] = nodePath;
             }
@@ -501,7 +501,7 @@ function isExcludedFromLinterOptions(
     if (config === undefined || config.linterOptions === undefined || config.linterOptions.exclude === undefined) {
         return false;
     }
-    return config.linterOptions.exclude.some((pattern) => testForExclusionPattern(fileName, pattern));
+    return config.linterOptions.exclude.some(pattern => testForExclusionPattern(fileName, pattern));
 }
 
 function getConfigurationFailureMessage(err: any): string {

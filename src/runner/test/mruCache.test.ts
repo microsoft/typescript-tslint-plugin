@@ -19,4 +19,3 @@ describe('MruCache', () => {
         expect(cache.has('0')).to.equal(false);
     });
 });
-

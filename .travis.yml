@@ -17,6 +17,7 @@ script:
   - npm run compile
   - npm run test
   - npm run e2e
+  - npm run lint
 
 after_failure:
   - cat e2e/server-fixture/server.log

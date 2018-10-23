@@ -13,7 +13,7 @@
     "prepublish": "npm run compile",
     "compile": "tsc",
     "test": "mocha ./out/test",
-    "lint": "tslint src/index.ts",
+    "lint": "tslint 'src/**/*.ts'",
     "e2e": "mocha ./e2e/tests/**/*.test.js --slow 2000 --timeout 10000"
   },
   "dependencies": {

@@ -23,7 +23,7 @@ describe('TSLintRunner', () => {
         });
 
         it('should return an error for test file', () => {
-            const folderPath = path.join(testDataRoot, 'with-tslint')
+            const folderPath = path.join(testDataRoot, 'with-tslint');
             const filePath = path.join(folderPath, 'test.ts');
             const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), {} as RunConfiguration);
 
@@ -155,7 +155,7 @@ describe('TSLintRunner', () => {
     });
 
     describe('getNonOverlappingReplacements', () => {
-        it('should filter out overlapping replacements', () => { 
+        it('should filter out overlapping replacements', () => {
             const runner = createTsLintRunner();
             const filePath = path.join(testDataRoot, 'overlapping-errors', 'test.ts');
             const result = runner.runTsLint(filePath, fs.readFileSync(filePath).toString(), {} as RunConfiguration);

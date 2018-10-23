@@ -34,7 +34,7 @@ See [editor support](#editor-support) for more detailed setup instructions.
  * `ignoreDefinitionFiles` - Control if TypeScript definition files should be ignored.
  * `alwaysShowRuleFailuresAsWarnings` - Always show rule failures as warnings, ignoring the severity configuration in the tslint.json configuration.
  * `disableNoUnusedVariableRule` - Disable `no-unused-variable` rule.
- * `supressWhileTypeErrorsPresent` - Supress tslint errors from being reported while other errors are present.
+ * `suppressWhileTypeErrorsPresent` - Supress tslint errors from being reported while other errors are present.
  * `mockTypeScriptVersion` - Force tslint to use the same version of TypeScript as this plugin. This will affect other plugins that require the typescript package.
 
 Here is a configuration sample:
@@ -49,7 +49,7 @@ Here is a configuration sample:
         "ignoreDefinitionFiles": true,
         "configFile": "../tslint.json",
         "disableNoUnusedVariableRule": false,
-        "supressWhileTypeErrorsPresent": false,
+        "suppressWhileTypeErrorsPresent": false,
         "mockTypeScriptVersion": false
       }
     ]

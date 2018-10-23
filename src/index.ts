@@ -10,7 +10,7 @@ interface Settings {
     ignoreDefinitionFiles?: boolean;
     configFile?: string;
     disableNoUnusedVariableRule?: boolean  // support to enable/disable the workaround for https://github.com/Microsoft/TypeScript/issues/15344
-    supressWhileTypeErrorsPresent: boolean;
+    suppressWhileTypeErrorsPresent: boolean;
 }
 
 const pluginId = 'tslint-language-service';
@@ -275,7 +275,7 @@ function init(modules: { typescript: typeof ts_module }) {
         proxy.getSemanticDiagnostics = (fileName: string) => {
             const diagnostics = oldLS.getSemanticDiagnostics(fileName);
 
-            if (config.supressWhileTypeErrorsPresent && diagnostics.length > 0) {
+            if (config.suppressWhileTypeErrorsPresent && diagnostics.length > 0) {
                 return diagnostics;
             }
 
@@ -337,7 +337,7 @@ function init(modules: { typescript: typeof ts_module }) {
 
         proxy.getCodeFixesAtPosition = function (fileName: string, start: number, end: number, errorCodes: number[], formatOptions: ts.FormatCodeSettings, userPreferences: ts.UserPreferences): ReadonlyArray<ts.CodeFixAction> {
             let prior = oldLS.getCodeFixesAtPosition(fileName, start, end, errorCodes, formatOptions, userPreferences);
-            if (config.supressWhileTypeErrorsPresent && prior.length > 0) {
+            if (config.suppressWhileTypeErrorsPresent && prior.length > 0) {
                 return prior;
             }
 

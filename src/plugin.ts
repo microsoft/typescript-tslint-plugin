@@ -30,27 +30,24 @@ class FailureMap {
 
 export class TSLintPlugin {
     private readonly codeFixActions = new Map<string, FailureMap>();
-    private readonly logger: Logger;
-    private readonly project: ts_module.server.Project;
     private readonly configFileWatcher: ConfigFileWatcher;
     private config: Settings;
     private readonly runner: TsLintRunner;
 
     public constructor(
         private readonly ts: typeof ts_module,
-        info: ts.server.PluginCreateInfo
+        private readonly logger: Logger,
+        private readonly project: ts_module.server.Project,
+        config: any,
     ) {
-        this.logger = Logger.forPlugin(info);
-        this.project = info.project;
-
         this.logger.info('loaded');
-        this.config = fixRelativeConfigFilePath(info.config, info.project.getCurrentDirectory());
+        this.config = fixRelativeConfigFilePath(config, project.getCurrentDirectory());
 
         this.runner = new TsLintRunner(() => { });
 
         // Watch config file for changes
-        if (info.project instanceof ts.server.ConfiguredProject && ts.sys.watchFile) {
-            const configFile = info.project.getConfigFilePath();
+        if (project instanceof ts.server.ConfiguredProject && ts.sys.watchFile) {
+            const configFile = project.getConfigFilePath();
             this.logger.info(`Found configured project: ${configFile}`);
 
             ts.sys.watchFile(configFile, (_fileName: string, eventKind: ts.FileWatcherEventKind) => {
@@ -76,15 +73,15 @@ export class TSLintPlugin {
                 }
 
                 this.logger.info(`Updating config settings: ${JSON.stringify(pluginSettings)}`);
-                this.config = fixRelativeConfigFilePath(pluginSettings, info.project.getCurrentDirectory());
-                info.project.refreshDiagnostics();
+                this.config = fixRelativeConfigFilePath(pluginSettings, this.project.getCurrentDirectory());
+                this.project.refreshDiagnostics();
             });
         }
 
         this.configFileWatcher = new ConfigFileWatcher(ts, filePath => {
             this.logger.info('TSlint file changed');
             this.runner.onConfigFileChange(filePath);
-            info.project.refreshDiagnostics();
+            this.project.refreshDiagnostics();
         });
     }
 

@@ -7,8 +7,29 @@ import { Logger } from './Logger';
 import { RunResult, TsLintRunner } from './runner';
 import { Settings } from './Settings';
 
+class FailureMap {
+    private readonly _map = new Map<string, tslint.RuleFailure>();
+
+    public get(start: number, end: number) {
+        return this._map.get(this.key(start, end));
+    }
+
+    public set(start: number, end: number, failure: tslint.RuleFailure): void {
+        this._map.set(this.key(start, end), failure);
+    }
+
+    public values() {
+        return this._map.values();
+    }
+
+    // key to identify a rule failure
+    private key(start: number, end: number): string {
+        return `[${start},${end}]`;
+    }
+}
+
 export class TSLintPlugin {
-    private readonly codeFixActions = new Map<string, Map<string, tslint.RuleFailure>>();
+    private readonly codeFixActions = new Map<string, FailureMap>();
     private readonly logger: Logger;
     private readonly project: ts_module.server.Project;
     private readonly configFileWatcher: ConfigFileWatcher;
@@ -146,7 +167,7 @@ export class TSLintPlugin {
             if (documentFixes) {
                 const fixes = prior ? [...prior] : [];
 
-                const problem = documentFixes.get(computeKey(start, end));
+                const problem = documentFixes.get(start, end);
                 if (problem) {
                     this.addRuleFailureFix(fixes, problem, fileName);
                     this.addRuleFailureFixAll(fixes, problem.getRuleName(), documentFixes, fileName);
@@ -177,12 +198,12 @@ export class TSLintPlugin {
             return;
         }
 
-        let documentAutoFixes: Map<string, tslint.RuleFailure> | undefined = this.codeFixActions.get(file.fileName);
+        let documentAutoFixes = this.codeFixActions.get(file.fileName);
         if (!documentAutoFixes) {
-            documentAutoFixes = new Map<string, tslint.RuleFailure>();
+            documentAutoFixes = new FailureMap();
             this.codeFixActions.set(file.fileName, documentAutoFixes);
         }
-        documentAutoFixes.set(computeKey(problem.getStartPosition().getPosition(), problem.getEndPosition().getPosition()), problem);
+        documentAutoFixes.set(problem.getStartPosition().getPosition(), problem.getEndPosition().getPosition(), problem);
     }
 
     private addRuleFailureFix(fixes: ts_module.CodeAction[], problem: tslint.RuleFailure, fileName: string) {
@@ -195,7 +216,7 @@ export class TSLintPlugin {
     /**
      * Generate a code action that fixes all instances of ruleName.
      */
-    private addRuleFailureFixAll(fixes: ts_module.CodeAction[], ruleName: string, problems: Map<string, tslint.RuleFailure>, fileName: string) {
+    private addRuleFailureFixAll(fixes: ts_module.CodeAction[], ruleName: string, problems: FailureMap, fileName: string) {
         const changes: ts_module.FileTextChanges[] = [];
 
         for (const problem of problems.values()) {
@@ -228,7 +249,7 @@ export class TSLintPlugin {
         });
     }
 
-    private addAllAutoFixable(fixes: ts_module.CodeAction[], documentFixes: Map<string, tslint.RuleFailure>, fileName: string) {
+    private addAllAutoFixable(fixes: ts_module.CodeAction[], documentFixes: FailureMap, fileName: string) {
         const allReplacements = this.runner.getNonOverlappingReplacements(Array.from(documentFixes.values()));
         fixes.push({
             description: `Fix all auto-fixable tslint failures`,
@@ -281,11 +302,6 @@ function fixRelativeConfigFilePath(config: Settings, projectRoot: string): Setti
     }
     config.configFile = path.join(projectRoot, config.configFile);
     return config;
-}
-
-// key to identify a rule failure
-function computeKey(start: number, end: number): string {
-    return `[${start},${end}]`;
 }
 
 function getReplacements(fix: tslint.Fix | undefined): tslint.Replacement[] {

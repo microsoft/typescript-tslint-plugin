@@ -3,7 +3,6 @@
 	"extends": [
 		"tslint:recommended"
 	],
-	"jsRules": {},
 	"rules": {
 		"indent": [
 			true,
@@ -25,9 +24,7 @@
 		"member-access": [
 			true
 		],
-		"max-classes-per-file": [
-			false
-		],
+		"max-classes-per-file": false,
 		"no-empty": false,
 		"object-literal-sort-keys": false,
 		"no-unused-expression": true,

@@ -1,11 +1,10 @@
-import * as path from 'path';
 import * as tslint from 'tslint';
 import * as ts_module from 'typescript/lib/tsserverlibrary';
 import { pluginId, TSLINT_ERROR_CODE, TSLINT_ERROR_SOURCE } from './config';
 import { ConfigFileWatcher } from './configFileWatcher';
 import { Logger } from './logger';
 import { RunResult, TsLintRunner } from './runner';
-import { Settings } from './settings';
+import { Settings, loadSettingsFromTSConfig } from './settings';
 
 class FailureMap {
     private readonly _map = new Map<string, tslint.RuleFailure>();
@@ -41,7 +40,7 @@ export class TSLintPlugin {
         config: any,
     ) {
         this.logger.info('loaded');
-        this.config = fixRelativeConfigFilePath(config, project.getCurrentDirectory());
+        this.config = loadSettingsFromTSConfig(config, project.getCurrentDirectory());
 
         this.runner = new TsLintRunner(() => { });
 
@@ -73,7 +72,7 @@ export class TSLintPlugin {
                 }
 
                 this.logger.info(`Updating config settings: ${JSON.stringify(pluginSettings)}`);
-                this.config = fixRelativeConfigFilePath(pluginSettings, this.project.getCurrentDirectory());
+                this.config = loadSettingsFromTSConfig(pluginSettings, this.project.getCurrentDirectory());
                 this.project.refreshDiagnostics();
             });
         }
@@ -288,17 +287,6 @@ export class TSLintPlugin {
         }
         return this.ts.DiagnosticCategory.Warning;
     }
-}
-
-function fixRelativeConfigFilePath(config: Settings, projectRoot: string): Settings {
-    if (!config.configFile) {
-        return config;
-    }
-    if (path.isAbsolute(config.configFile)) {
-        return config;
-    }
-    config.configFile = path.join(projectRoot, config.configFile);
-    return config;
 }
 
 function getReplacements(fix: tslint.Fix | undefined): tslint.Replacement[] {

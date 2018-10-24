@@ -1,4 +1,4 @@
-import * as ts_module from '../node_modules/typescript/lib/tsserverlibrary';
+import * as ts_module from 'typescript/lib/tsserverlibrary';
 
 export class ConfigFileWatcher {
     private readonly _watchedConfigs = new Set<string>();

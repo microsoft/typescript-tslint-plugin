@@ -2,10 +2,10 @@ import * as path from 'path';
 import * as tslint from 'tslint';
 import * as ts_module from 'typescript/lib/tsserverlibrary';
 import { pluginId, TSLINT_ERROR_CODE, TSLINT_ERROR_SOURCE } from './config';
-import { ConfigFileWatcher } from './ConfigFileWatcher';
-import { Logger } from './Logger';
+import { ConfigFileWatcher } from './configFileWatcher';
+import { Logger } from './logger';
 import { RunResult, TsLintRunner } from './runner';
-import { Settings } from './Settings';
+import { Settings } from './settings';
 
 class FailureMap {
     private readonly _map = new Map<string, tslint.RuleFailure>();

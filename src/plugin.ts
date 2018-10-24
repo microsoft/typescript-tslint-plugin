@@ -1,10 +1,10 @@
 import * as tslint from 'tslint';
 import * as ts_module from 'typescript/lib/tsserverlibrary';
-import { pluginId, TSLINT_ERROR_CODE, TSLINT_ERROR_SOURCE } from './config';
+import { TSLINT_ERROR_CODE, TSLINT_ERROR_SOURCE } from './config';
 import { ConfigFileWatcher } from './configFileWatcher';
 import { Logger } from './logger';
 import { RunResult, TsLintRunner } from './runner';
-import { Settings, loadSettingsFromTSConfig } from './settings';
+import { Settings, loadSettingsFromPluginConfig, loadSettingsFromTsConfig } from './settings';
 
 class FailureMap {
     private readonly _map = new Map<string, tslint.RuleFailure>();
@@ -40,7 +40,7 @@ export class TSLintPlugin {
         config: any,
     ) {
         this.logger.info('loaded');
-        this.config = loadSettingsFromTSConfig(config, project.getCurrentDirectory());
+        this.config = loadSettingsFromPluginConfig(config, project.getCurrentDirectory());
 
         this.runner = new TsLintRunner(() => { });
 
@@ -56,23 +56,14 @@ export class TSLintPlugin {
 
                 this.logger.info('TSConfig file changed');
 
-                const configFileResult = ts.readConfigFile(configFile, ts.sys.readFile);
-                if (configFileResult.error || !configFileResult.config) {
-                    this.logger.info(`Error reading config file: ${configFileResult.error}`);
+                const newConfig = loadSettingsFromTsConfig(ts, configFile, this.project.getCurrentDirectory());
+                if (!newConfig) {
+                    this.logger.info(`Could not read new config`);
                     return;
                 }
 
-                if (!configFileResult.config.compilerOptions || !Array.isArray(configFileResult.config.compilerOptions.plugins)) {
-                    return;
-                }
-
-                const pluginSettings = (configFileResult.config.compilerOptions.plugins as any[]).find(x => x.name === pluginId);
-                if (!pluginSettings) {
-                    return;
-                }
-
-                this.logger.info(`Updating config settings: ${JSON.stringify(pluginSettings)}`);
-                this.config = loadSettingsFromTSConfig(pluginSettings, this.project.getCurrentDirectory());
+                this.logger.info(`Updating config settings: ${JSON.stringify(newConfig)}`);
+                this.config = newConfig;
                 this.project.refreshDiagnostics();
             });
         }

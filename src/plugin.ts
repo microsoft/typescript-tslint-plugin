@@ -5,6 +5,7 @@ import { ConfigFileWatcher } from './configFileWatcher';
 import { Logger } from './logger';
 import { RunResult, TsLintRunner } from './runner';
 import { Settings, loadSettingsFromPluginConfig, loadSettingsFromTsConfig } from './settings';
+import { getNonOverlappingReplacements, filterProblemsForFile } from './runner/failures';
 
 class FailureMap {
     private readonly _map = new Map<string, tslint.RuleFailure>();
@@ -127,7 +128,7 @@ export class TSLintPlugin {
                     });
                 }
 
-                const tslintProblems = this.runner.filterProblemsForFile(fileName, result.lintResult.failures);
+                const tslintProblems = filterProblemsForFile(fileName, result.lintResult.failures);
                 for (const problem of tslintProblems) {
                     diagnostics.push(this.makeDiagnostic(problem, file));
                     this.recordCodeAction(problem, file);
@@ -237,7 +238,7 @@ export class TSLintPlugin {
     }
 
     private addAllAutoFixable(fixes: ts_module.CodeAction[], documentFixes: FailureMap, fileName: string) {
-        const allReplacements = this.runner.getNonOverlappingReplacements(Array.from(documentFixes.values()));
+        const allReplacements = getNonOverlappingReplacements(Array.from(documentFixes.values()));
         fixes.push({
             description: `Fix all auto-fixable tslint failures`,
             changes: [{

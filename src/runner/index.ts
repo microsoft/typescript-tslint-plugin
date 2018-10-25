@@ -2,7 +2,7 @@
 import * as cp from 'child_process';
 import * as fs from 'fs';
 import * as minimatch from 'minimatch';
-import { normalize, dirname, delimiter } from 'path';
+import { dirname, delimiter } from 'path';
 import * as tslint from 'tslint'; // this is a dev dependency only
 import * as typescript from 'typescript'; // this is a dev dependency only
 import * as util from 'util';
@@ -127,71 +127,8 @@ export class TsLintRunner {
         return this.doRun(filePath, contents, library, configuration, warnings);
     }
 
-    /**
-     * Filter failures for the given document
-     */
-    public filterProblemsForFile(
-        filePath: string,
-        failures: tslint.RuleFailure[],
-    ): tslint.RuleFailure[] {
-        const normalizedPath = normalize(filePath);
-        // we only show diagnostics targetting this open document, some tslint rule return diagnostics for other documents/files
-        const normalizedFiles = new Map<string, string>();
-        return failures.filter(each => {
-            const fileName = each.getFileName();
-            if (!normalizedFiles.has(fileName)) {
-                normalizedFiles.set(fileName, normalize(fileName));
-            }
-            return normalizedFiles.get(fileName) === normalizedPath;
-        });
-    }
-
     public onConfigFileChange(_tsLintFilePath: string) {
         this.configCache.flush();
-    }
-
-    public getNonOverlappingReplacements(failures: tslint.RuleFailure[]): tslint.Replacement[] {
-        function overlaps(a: tslint.Replacement, b: tslint.Replacement): boolean {
-            return a.end >= b.start;
-        }
-
-        const sortedFailures = this.sortFailures(failures);
-        const nonOverlapping: tslint.Replacement[] = [];
-        for (let i = 0; i < sortedFailures.length; i++) {
-            const replacements = this.getReplacements(sortedFailures[i].getFix());
-            if (i === 0 || !overlaps(nonOverlapping[nonOverlapping.length - 1], replacements[0])) {
-                nonOverlapping.push(...replacements);
-            }
-        }
-        return nonOverlapping;
-    }
-
-    private getReplacements(fix: tslint.Fix | undefined): tslint.Replacement[] {
-        let replacements: tslint.Replacement[] | null = null;
-        // in tslint4 a Fix has a replacement property with the Replacements
-        if ((fix as any).replacements) {
-            // tslint4
-            replacements = (fix as any).replacements;
-        } else {
-            // in tslint 5 a Fix is a Replacement | Replacement[]
-            if (!Array.isArray(fix)) {
-                replacements = [fix as any];
-            } else {
-                replacements = fix;
-            }
-        }
-        return replacements || [];
-    }
-
-    private getReplacement(failure: tslint.RuleFailure, at: number): tslint.Replacement {
-        return this.getReplacements(failure.getFix())[at];
-    }
-
-    private sortFailures(failures: tslint.RuleFailure[]): tslint.RuleFailure[] {
-        // The failures.replacements are sorted by position, we sort on the position of the first replacement
-        return failures.sort((a, b) => {
-            return this.getReplacement(a, 0).start - this.getReplacement(b, 0).start;
-        });
     }
 
     private loadLibrary(filePath: string, configuration: RunConfiguration, warningsOutput: string[]): void {

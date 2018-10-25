@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import 'mocha';
 import * as path from 'path';
 import { RunConfiguration, TsLintRunner } from '../index';
+import { getNonOverlappingReplacements, filterProblemsForFile } from '../failures';
 
 const testDataRoot = path.join(__dirname, '..', '..', '..', 'test-data');
 
@@ -150,7 +151,7 @@ describe('TSLintRunner', () => {
 
             expect(result.lintResult.failures.length).to.equal(1);
 
-            const filteredFailures = runner.filterProblemsForFile('does-not-exist', result.lintResult.failures);
+            const filteredFailures = filterProblemsForFile('does-not-exist', result.lintResult.failures);
             expect(filteredFailures.length).to.equal(0);
         });
     });
@@ -163,7 +164,7 @@ describe('TSLintRunner', () => {
 
             expect(result.lintResult.failures.length).to.equal(2);
 
-            const noOverlappingReplacements = runner.getNonOverlappingReplacements(result.lintResult.failures);
+            const noOverlappingReplacements = getNonOverlappingReplacements(result.lintResult.failures);
             expect(noOverlappingReplacements.length).to.equal(1);
         });
     });

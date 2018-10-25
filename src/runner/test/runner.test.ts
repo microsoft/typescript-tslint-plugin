@@ -31,7 +31,7 @@ describe('TSLintRunner', () => {
             expect(result.lintResult.warningCount).to.equal(0);
 
             const firstFailure = result.lintResult.failures[0];
-            expect(firstFailure.getFileName()).to.equal(filePath);
+            expect(path.normalize(firstFailure.getFileName())).to.equal(filePath);
             expect(firstFailure.getRuleName()).to.equal('array-type');
 
             const fix = firstFailure.getFix();

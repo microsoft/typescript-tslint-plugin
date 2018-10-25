@@ -1,8 +1,6 @@
 # TypeScript TSLint Language Service Plugin
 
-<!-- 
-[![Build Status](https://secure.travis-ci.org/microsoft/typescript-tslint-plugin.png)](http://travis-ci.org/microsoft/typescript-tslint-plugin)
-[![NPM version](https://img.shields.io/npm/v/typescript-tslint-plugin.svg)](https://www.npmjs.org/package/typescript-tslint-plugin)   -->
+[![Build Status](https://travis-ci.org/Microsoft/typescript-tslint-plugin.svg?branch=master)](https://travis-ci.org/Microsoft/typescript-tslint-plugin)
 
 TypeScript [language service plugin](https://blogs.msdn.microsoft.com/typescript/2017/04/27/announcing-typescript-2-3/) for [TSLint][tslint]. 
 

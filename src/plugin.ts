@@ -152,17 +152,16 @@ export class TSLintPlugin {
         const getCodeFixesAtPosition = languageService.getCodeFixesAtPosition.bind(languageService);
 
         languageService.getCodeFixesAtPosition = (fileName: string, start: number, end: number, errorCodes: number[], formatOptions: ts.FormatCodeSettings, userPreferences: ts.UserPreferences): ReadonlyArray<ts.CodeFixAction> => {
-            const prior = getCodeFixesAtPosition(fileName, start, end, errorCodes, formatOptions, userPreferences);
-            if (this.config.suppressWhileTypeErrorsPresent && prior.length > 0) {
-                return prior;
+            const fixes = getCodeFixesAtPosition(fileName, start, end, errorCodes, formatOptions, userPreferences);
+
+            if (this.config.suppressWhileTypeErrorsPresent && fixes.length > 0) {
+                return fixes;
             }
 
-            this.logger.info("tslint-language-service getCodeFixes " + errorCodes[0]);
+            this.logger.info(`tslint-language-service getCodeFixes ${errorCodes[0]}`);
+
             const documentFixes = this.codeFixActions.get(fileName);
-
             if (documentFixes) {
-                const fixes = prior ? [...prior] : [];
-
                 const problem = documentFixes.get(start, end);
                 if (problem) {
                     const fix = problem.getFix();
@@ -177,11 +176,9 @@ export class TSLintPlugin {
                 if (problem) {
                     fixes.push(this.getDisableRuleQuickFix(problem, fileName, this.getProgram().getSourceFile(fileName)!));
                 }
-
-                return fixes;
             }
 
-            return prior;
+            return fixes;
         };
 
         return languageService;
@@ -250,7 +247,7 @@ export class TSLintPlugin {
         };
     }
 
-    private getFixAllAutoFixableQuickFix(documentFixes: FailureMap, fileName: string): ts_module.CodeAction  {
+    private getFixAllAutoFixableQuickFix(documentFixes: FailureMap, fileName: string): ts_module.CodeAction {
         const allReplacements = getNonOverlappingReplacements(Array.from(documentFixes.values()));
         return {
             description: `Fix all auto-fixable tslint failures`,

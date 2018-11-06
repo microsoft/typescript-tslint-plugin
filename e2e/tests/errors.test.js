@@ -1,4 +1,5 @@
 // @ts-check
+const { assertSpan } = require('./assert');
 const assert = require('chai').assert;
 const path = require('path');
 const createServer = require('../server-fixture');
@@ -45,23 +46,3 @@ describe('Errors', () => {
         assert.strictEqual(error1.text, `Parentheses are required around the parameters of an arrow function definition (arrow-parens)`);
     });
 });
-
-/**
- * @param {{ start: { line: number, offset: number }, end: { line: number, offset: number }}} span
- * @param {{ line: number, offset: number }} start
- * @param {{ line: number, offset: number }} end
- */
-function assertSpan(span, start, end) {
-    assertPosition(span.start, start.line, start.offset);
-    assertPosition(span.end, end.line, end.offset);
-}
-
-/**
- * @param {{ line: number, offset: number }} pos
- * @param {number} line 
- * @param {number} offset
- */
-function assertPosition(pos, line, offset) {
-    assert.strictEqual(pos.line, line);
-    assert.strictEqual(pos.offset, offset);
-}

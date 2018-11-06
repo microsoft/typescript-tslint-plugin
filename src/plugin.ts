@@ -172,10 +172,10 @@ export class TSLintPlugin {
                     }
                 }
 
-                this.addAllAutoFixable(fixes, documentFixes, fileName);
+                fixes.push(this.getFixAllAutoFixableQuickFix(documentFixes, fileName));
 
                 if (problem) {
-                    this.addDisableRuleFix(fixes, problem, fileName, this.getProgram().getSourceFile(fileName)!);
+                    fixes.push(this.getDisableRuleQuickFix(problem, fileName, this.getProgram().getSourceFile(fileName)!));
                 }
 
                 return fixes;
@@ -237,8 +237,8 @@ export class TSLintPlugin {
         });
     }
 
-    private addDisableRuleFix(fixes: ts_module.CodeAction[], problem: tslint.RuleFailure, fileName: string, file: ts_module.SourceFile) {
-        fixes.push({
+    private getDisableRuleQuickFix(problem: tslint.RuleFailure, fileName: string, file: ts_module.SourceFile): ts_module.CodeAction {
+        return {
             description: `Disable rule '${problem.getRuleName()}'`,
             changes: [{
                 fileName,
@@ -247,18 +247,18 @@ export class TSLintPlugin {
                     span: { start: file.getLineStarts()[problem.getStartPosition().getLineAndCharacter().line], length: 0 },
                 }],
             }],
-        });
+        };
     }
 
-    private addAllAutoFixable(fixes: ts_module.CodeAction[], documentFixes: FailureMap, fileName: string) {
+    private getFixAllAutoFixableQuickFix(documentFixes: FailureMap, fileName: string): ts_module.CodeAction  {
         const allReplacements = getNonOverlappingReplacements(Array.from(documentFixes.values()));
-        fixes.push({
+        return {
             description: `Fix all auto-fixable tslint failures`,
             changes: [{
                 fileName,
                 textChanges: allReplacements.map(convertReplacementToTextChange),
             }],
-        });
+        };
     }
 
     private getProgram() {

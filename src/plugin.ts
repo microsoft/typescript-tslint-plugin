@@ -77,6 +77,14 @@ export class TSLintPlugin {
     }
 
     public decorate(languageService: ts.LanguageService) {
+        const oldGetSupportedCodeFixes = this.ts.getSupportedCodeFixes.bind(this.ts);
+        this.ts.getSupportedCodeFixes = () => {
+            return [
+                ...oldGetSupportedCodeFixes(),
+                TSLINT_ERROR_CODE,
+            ];
+        };
+
         const oldGetSemanticDiagnostics = languageService.getSemanticDiagnostics.bind(languageService);
         languageService.getSemanticDiagnostics = (fileName: string) => {
             const diagnostics = oldGetSemanticDiagnostics(fileName);
@@ -157,10 +165,15 @@ export class TSLintPlugin {
 
                 const problem = documentFixes.get(start, end);
                 if (problem) {
-                    this.addRuleFailureFix(fixes, problem, fileName);
-                    this.addRuleFailureFixAll(fixes, problem.getRuleName(), documentFixes, fileName);
+                    const fix = problem.getFix();
+                    if (fix) {
+                        fixes.push(this.ruleFailureToTsFix(problem, fileName));
+                        this.addRuleFailureFixAll(fixes, problem.getRuleName(), documentFixes, fileName);
+                    }
                 }
+
                 this.addAllAutoFixable(fixes, documentFixes, fileName);
+
                 if (problem) {
                     this.addDisableRuleFix(fixes, problem, fileName, this.getProgram().getSourceFile(fileName)!);
                 }
@@ -194,11 +207,11 @@ export class TSLintPlugin {
         documentAutoFixes.set(problem.getStartPosition().getPosition(), problem.getEndPosition().getPosition(), problem);
     }
 
-    private addRuleFailureFix(fixes: ts_module.CodeAction[], problem: tslint.RuleFailure, fileName: string) {
-        fixes.push({
-            description: `Fix '${problem.getRuleName()}'`,
+    private ruleFailureToTsFix(problem: tslint.RuleFailure, fileName: string): ts_module.CodeAction {
+        return {
+            description: `Fix: ${problem.getFailure()}`,
             changes: [problemToFileTextChange(problem, fileName)],
-        });
+        };
     }
 
     /**

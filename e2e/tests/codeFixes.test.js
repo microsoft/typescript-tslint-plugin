@@ -49,7 +49,7 @@ describe('CodeFixes', () => {
 
         const [firstFix] = errorResponse.body;
         {
-            assert.strictEqual(firstFix.description, "Fix 'array-type'");
+            assert.strictEqual(firstFix.description, "Fix: Array type using 'Array<T>' is forbidden for simple types. Use 'T[]' instead.");
 
             const change = firstFix.changes[0];
             assert.strictEqual(change.textChanges.length, 2);

@@ -35,7 +35,7 @@ const getCodeFixes = (fileContents, data) => {
 }
 
 describe('CodeFixes', () => {
-    it('should return fix for array-type', async () => {
+    it('should return fix and disables for single error aaaa', async () => {
         const errorResponse = await getCodeFixes(
             `let t: Array<string> = new Array<string>(); console.log(t);`, {
                 startLine: 1,
@@ -45,20 +45,280 @@ describe('CodeFixes', () => {
             });
 
         assert.isTrue(errorResponse.success);
-        assert.strictEqual(errorResponse.body.length, 3);
+        assert.deepEqual(errorResponse.body, [
+            {
+                "fixName": "",
+                "description": "Fix: Array type using 'Array<T>' is forbidden for simple types. Use 'T[]' instead.",
+                "changes": [
+                    {
+                        "fileName": mockFileName,
+                        "textChanges": [
+                            {
+                                "start": {
+                                    "line": 1,
+                                    "offset": 8
+                                },
+                                "end": {
+                                    "line": 1,
+                                    "offset": 14
+                                },
+                                "newText": ""
+                            },
+                            {
+                                "start": {
+                                    "line": 1,
+                                    "offset": 20
+                                },
+                                "end": {
+                                    "line": 1,
+                                    "offset": 21
+                                },
+                                "newText": "[]"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "fixName": "",
+                "description": "Fix all auto-fixable tslint failures",
+                "changes": [
+                    {
+                        "fileName": mockFileName,
+                        "textChanges": [
+                            {
+                                "start": {
+                                    "line": 1,
+                                    "offset": 8
+                                },
+                                "end": {
+                                    "line": 1,
+                                    "offset": 14
+                                },
+                                "newText": ""
+                            },
+                            {
+                                "start": {
+                                    "line": 1,
+                                    "offset": 20
+                                },
+                                "end": {
+                                    "line": 1,
+                                    "offset": 21
+                                },
+                                "newText": "[]"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "fixName": "",
+                "description": "Disable rule 'array-type'",
+                "changes": [
+                    {
+                        "fileName": mockFileName,
+                        "textChanges": [
+                            {
+                                "start": {
+                                    "line": 1,
+                                    "offset": 1
+                                },
+                                "end": {
+                                    "line": 1,
+                                    "offset": 1
+                                },
+                                "newText": "// tslint:disable-next-line:array-type"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]);
+    });
 
-        const [firstFix] = errorResponse.body;
-        {
-            assert.strictEqual(firstFix.description, "Fix: Array type using 'Array<T>' is forbidden for simple types. Use 'T[]' instead.");
+    it('should return individual fixes and fix all for multuple errors of same type in file', async () => {
+        const errorResponse = await getCodeFixes(
+            `let x: Array<string> = new Array<string>(); console.log(x);\nlet y: Array<string> = new Array<string>(); console.log(y);`, {
+                startLine: 1,
+                startOffset: 8,
+                endLine: 1,
+                endOffset: 21,
+            });
 
-            const change = firstFix.changes[0];
-            assert.strictEqual(change.textChanges.length, 2);
+        assert.isTrue(errorResponse.success);
+        assert.strictEqual(errorResponse.body.length, 4);
 
-            assertSpan(change.textChanges[0], { "line": 1, "offset": 8 }, { "line": 1, "offset": 14 });
-            assert.strictEqual(change.textChanges[0].newText, '');
-
-            assertSpan(change.textChanges[1], { "line": 1, "offset": 20 }, { "line": 1, "offset": 21 });
-            assert.strictEqual(change.textChanges[1].newText, '[]');
-        }
+        assert.deepEqual(errorResponse.body, [
+            {
+                "fixName": "",
+                "description": "Fix: Array type using 'Array<T>' is forbidden for simple types. Use 'T[]' instead.",
+                "changes": [
+                    {
+                        "fileName": mockFileName,
+                        "textChanges": [
+                            {
+                                "start": {
+                                    "line": 1,
+                                    "offset": 8
+                                },
+                                "end": {
+                                    "line": 1,
+                                    "offset": 14
+                                },
+                                "newText": ""
+                            },
+                            {
+                                "start": {
+                                    "line": 1,
+                                    "offset": 20
+                                },
+                                "end": {
+                                    "line": 1,
+                                    "offset": 21
+                                },
+                                "newText": "[]"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "description": "Fix all 'array-type'",
+                "changes": [
+                    {
+                        "fileName": mockFileName,
+                        "textChanges": [
+                            {
+                                "start": {
+                                    "line": 1,
+                                    "offset": 8
+                                },
+                                "end": {
+                                    "line": 1,
+                                    "offset": 14
+                                },
+                                "newText": ""
+                            },
+                            {
+                                "start": {
+                                    "line": 1,
+                                    "offset": 20
+                                },
+                                "end": {
+                                    "line": 1,
+                                    "offset": 21
+                                },
+                                "newText": "[]"
+                            }
+                        ]
+                    },
+                    {
+                        "fileName": mockFileName,
+                        "textChanges": [
+                            {
+                                "start": {
+                                    "line": 2,
+                                    "offset": 8
+                                },
+                                "end": {
+                                    "line": 2,
+                                    "offset": 14
+                                },
+                                "newText": ""
+                            },
+                            {
+                                "start": {
+                                    "line": 2,
+                                    "offset": 20
+                                },
+                                "end": {
+                                    "line": 2,
+                                    "offset": 21
+                                },
+                                "newText": "[]"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "fixName": "",
+                "description": "Fix all auto-fixable tslint failures",
+                "changes": [
+                    {
+                        "fileName": mockFileName,
+                        "textChanges": [
+                            {
+                                "start": {
+                                    "line": 1,
+                                    "offset": 8
+                                },
+                                "end": {
+                                    "line": 1,
+                                    "offset": 14
+                                },
+                                "newText": ""
+                            },
+                            {
+                                "start": {
+                                    "line": 1,
+                                    "offset": 20
+                                },
+                                "end": {
+                                    "line": 1,
+                                    "offset": 21
+                                },
+                                "newText": "[]"
+                            },
+                            {
+                                "start": {
+                                    "line": 2,
+                                    "offset": 8
+                                },
+                                "end": {
+                                    "line": 2,
+                                    "offset": 14
+                                },
+                                "newText": ""
+                            },
+                            {
+                                "start": {
+                                    "line": 2,
+                                    "offset": 20
+                                },
+                                "end": {
+                                    "line": 2,
+                                    "offset": 21
+                                },
+                                "newText": "[]"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "fixName": "",
+                "description": "Disable rule 'array-type'",
+                "changes": [
+                    {
+                        "fileName": mockFileName,
+                        "textChanges": [
+                            {
+                                "start": {
+                                    "line": 1,
+                                    "offset": 1
+                                },
+                                "end": {
+                                    "line": 1,
+                                    "offset": 1
+                                },
+                                "newText": "// tslint:disable-next-line:array-type"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]);
     });
 });

@@ -101,7 +101,7 @@ export class TSLintPlugin {
     private getSemanticDiagnostics(
         delegate: (fileName: string) => ts_module.Diagnostic[],
         fileName: string,
-    ) {
+    ): ts_module.Diagnostic[] {
         const diagnostics = delegate(fileName);
 
         if (this.config.suppressWhileTypeErrorsPresent && diagnostics.length > 0) {
@@ -110,6 +110,7 @@ export class TSLintPlugin {
 
         try {
             this.logger.info(`Computing tslint semantic diagnostics...`);
+
             if (this.codeFixActions.has(fileName)) {
                 this.codeFixActions.delete(fileName);
             }
@@ -187,8 +188,12 @@ export class TSLintPlugin {
             if (problem) {
                 const fix = problem.getFix();
                 if (fix) {
-                    fixes.push(this.ruleFailureToTsFix(problem, fileName));
-                    this.addRuleFailureFixAll(fixes, problem.getRuleName(), documentFixes, fileName);
+                    fixes.push(this.getRuleFailureQuickFix(problem, fileName));
+
+                    const fixAll = this.getRuleFailureFixAllQuickFix(problem.getRuleName(), documentFixes, fileName);
+                    if (fixAll) {
+                        fixes.push(fixAll);
+                    }
                 }
             }
 
@@ -222,7 +227,7 @@ export class TSLintPlugin {
         documentAutoFixes.set(problem.getStartPosition().getPosition(), problem.getEndPosition().getPosition(), problem);
     }
 
-    private ruleFailureToTsFix(problem: tslint.RuleFailure, fileName: string): ts_module.CodeFixAction {
+    private getRuleFailureQuickFix(problem: tslint.RuleFailure, fileName: string): ts_module.CodeFixAction {
         return {
             description: `Fix: ${problem.getFailure()}`,
             fixName: '',
@@ -233,7 +238,7 @@ export class TSLintPlugin {
     /**
      * Generate a code action that fixes all instances of ruleName.
      */
-    private addRuleFailureFixAll(fixes: ts_module.CodeAction[], ruleName: string, problems: FailureMap, fileName: string) {
+    private getRuleFailureFixAllQuickFix(ruleName: string, problems: FailureMap, fileName: string): ts_module.CodeFixAction | undefined {
         const changes: ts_module.FileTextChanges[] = [];
 
         for (const problem of problems.values()) {
@@ -242,15 +247,16 @@ export class TSLintPlugin {
             }
         }
 
-        /* No need for this action if there's only one instance.  */
+        // No need for this action if there's only one instance.
         if (changes.length < 2) {
-            return;
+            return undefined;
         }
 
-        fixes.push({
+        return {
             description: `Fix all '${ruleName}'`,
+            fixName: '',
             changes,
-        });
+        };
     }
 
     private getDisableRuleQuickFix(problem: tslint.RuleFailure, fileName: string, file: ts_module.SourceFile): ts_module.CodeFixAction {

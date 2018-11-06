@@ -185,6 +185,7 @@ describe('CodeFixes', () => {
             },
             {
                 "description": "Fix all 'array-type'",
+                "fixName": "",
                 "changes": [
                     {
                         "fileName": mockFileName,

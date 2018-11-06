@@ -109,7 +109,7 @@ export class TSLintPlugin {
         }
 
         try {
-            this.logger.info(`Computing tslint semantic diagnostics...`);
+            this.logger.info(`Computing tslint semantic diagnostics for '${fileName}'`);
 
             if (this.codeFixActions.has(fileName)) {
                 this.codeFixActions.delete(fileName);
@@ -124,6 +124,7 @@ export class TSLintPlugin {
                 result = this.runner.runTsLint(fileName, this.getProgram(), {
                     configFile: this.config.configFile,
                     ignoreDefinitionFiles: this.config.ignoreDefinitionFiles,
+                    jsEnable: true,
                 });
                 if (result.configFilePath) {
                     this.configFileWatcher.ensureWatching(result.configFilePath);

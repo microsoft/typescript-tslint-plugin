@@ -7,7 +7,7 @@ const { openMockFile, getFirstResponseOfType } = require('./helpers');
 
 const tslintSource = 'tslint';
 
-const mockFileName = path.normalize(path.join(__dirname, '..', 'project-fixture', 'main.ts'));
+const mockFileName = path.join(__dirname, '..', 'project-fixture', 'main.ts').replace(/\\/g, '/');
 
 /**
  * @param {string} fileContents 

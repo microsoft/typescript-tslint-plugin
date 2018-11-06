@@ -1,5 +1,6 @@
 # 0.0.5 - November 5, 2018
-- Show diagnostic for quick fixes
+- Use diagnostic as label for quick fixes
+- Enable for js files included in tsconfig.
 
 # 0.0.4 - October 23, 2018
 - Fix spelling of setting name

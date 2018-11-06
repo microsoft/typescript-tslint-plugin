@@ -91,35 +91,8 @@ export class TSLintPlugin {
         };
 
         const getCodeFixesAtPosition = languageService.getCodeFixesAtPosition.bind(languageService);
-
         languageService.getCodeFixesAtPosition = (fileName: string, start: number, end: number, errorCodes: number[], formatOptions: ts.FormatCodeSettings, userPreferences: ts.UserPreferences): ReadonlyArray<ts.CodeFixAction> => {
-            const fixes = getCodeFixesAtPosition(fileName, start, end, errorCodes, formatOptions, userPreferences);
-
-            if (this.config.suppressWhileTypeErrorsPresent && fixes.length > 0) {
-                return fixes;
-            }
-
-            this.logger.info(`tslint-language-service getCodeFixes ${errorCodes[0]}`);
-
-            const documentFixes = this.codeFixActions.get(fileName);
-            if (documentFixes) {
-                const problem = documentFixes.get(start, end);
-                if (problem) {
-                    const fix = problem.getFix();
-                    if (fix) {
-                        fixes.push(this.ruleFailureToTsFix(problem, fileName));
-                        this.addRuleFailureFixAll(fixes, problem.getRuleName(), documentFixes, fileName);
-                    }
-                }
-
-                fixes.push(this.getFixAllAutoFixableQuickFix(documentFixes, fileName));
-
-                if (problem) {
-                    fixes.push(this.getDisableRuleQuickFix(problem, fileName, this.getProgram().getSourceFile(fileName)!));
-                }
-            }
-
-            return fixes;
+            return this.getCodeFixesAtPosition(getCodeFixesAtPosition, fileName, start, end, errorCodes, formatOptions, userPreferences);
         };
 
         return languageService;
@@ -191,6 +164,44 @@ export class TSLintPlugin {
         return diagnostics;
     }
 
+    private getCodeFixesAtPosition(
+        delegate: (fileName: string, start: number, end: number, errorCodes: number[], formatOptions: ts.FormatCodeSettings, userPreferences: ts.UserPreferences) => ts.CodeFixAction[],
+        fileName: string,
+        start: number,
+        end: number,
+        errorCodes: number[],
+        formatOptions: ts.FormatCodeSettings,
+        userPreferences: ts.UserPreferences
+    ): ReadonlyArray<ts.CodeFixAction> {
+        const fixes = delegate(fileName, start, end, errorCodes, formatOptions, userPreferences);
+
+        if (this.config.suppressWhileTypeErrorsPresent && fixes.length > 0) {
+            return fixes;
+        }
+
+        this.logger.info(`tslint-language-service getCodeFixes ${errorCodes[0]}`);
+
+        const documentFixes = this.codeFixActions.get(fileName);
+        if (documentFixes) {
+            const problem = documentFixes.get(start, end);
+            if (problem) {
+                const fix = problem.getFix();
+                if (fix) {
+                    fixes.push(this.ruleFailureToTsFix(problem, fileName));
+                    this.addRuleFailureFixAll(fixes, problem.getRuleName(), documentFixes, fileName);
+                }
+            }
+
+            fixes.push(this.getFixAllAutoFixableQuickFix(documentFixes, fileName));
+
+            if (problem) {
+                fixes.push(this.getDisableRuleQuickFix(problem, fileName, this.getProgram().getSourceFile(fileName)!));
+            }
+        }
+
+        return fixes;
+    }
+
     private recordCodeAction(problem: tslint.RuleFailure, file: ts.SourceFile) {
         let fix: tslint.Fix | undefined;
 
@@ -211,9 +222,10 @@ export class TSLintPlugin {
         documentAutoFixes.set(problem.getStartPosition().getPosition(), problem.getEndPosition().getPosition(), problem);
     }
 
-    private ruleFailureToTsFix(problem: tslint.RuleFailure, fileName: string): ts_module.CodeAction {
+    private ruleFailureToTsFix(problem: tslint.RuleFailure, fileName: string): ts_module.CodeFixAction {
         return {
             description: `Fix: ${problem.getFailure()}`,
+            fixName: '',
             changes: [problemToFileTextChange(problem, fileName)],
         };
     }
@@ -241,9 +253,10 @@ export class TSLintPlugin {
         });
     }
 
-    private getDisableRuleQuickFix(problem: tslint.RuleFailure, fileName: string, file: ts_module.SourceFile): ts_module.CodeAction {
+    private getDisableRuleQuickFix(problem: tslint.RuleFailure, fileName: string, file: ts_module.SourceFile): ts_module.CodeFixAction {
         return {
             description: `Disable rule '${problem.getRuleName()}'`,
+            fixName: '',
             changes: [{
                 fileName,
                 textChanges: [{
@@ -254,10 +267,11 @@ export class TSLintPlugin {
         };
     }
 
-    private getFixAllAutoFixableQuickFix(documentFixes: FailureMap, fileName: string): ts_module.CodeAction {
+    private getFixAllAutoFixableQuickFix(documentFixes: FailureMap, fileName: string): ts_module.CodeFixAction {
         const allReplacements = getNonOverlappingReplacements(Array.from(documentFixes.values()));
         return {
             description: `Fix all auto-fixable tslint failures`,
+            fixName: '',
             changes: [{
                 fileName,
                 textChanges: allReplacements.map(convertReplacementToTextChange),

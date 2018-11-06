@@ -7,7 +7,7 @@ const { openMockFile, getFirstResponseOfType } = require('./helpers');
 
 const tslintSource = 'tslint';
 
-const mockFileName = path.join(__dirname, '..', 'project-fixture', 'main.ts');
+const mockFileName = path.normalize(path.join(__dirname, '..', 'project-fixture', 'main.ts'));
 
 /**
  * @param {string} fileContents 
@@ -35,7 +35,7 @@ const getCodeFixes = (fileContents, data) => {
 }
 
 describe('CodeFixes', () => {
-    it('should return fix and disables for single error aaaa', async () => {
+    it('should return fix and disables for single error', async () => {
         const errorResponse = await getCodeFixes(
             `let t: Array<string> = new Array<string>(); console.log(t);`, {
                 startLine: 1,

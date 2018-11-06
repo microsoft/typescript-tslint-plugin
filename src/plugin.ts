@@ -87,66 +87,7 @@ export class TSLintPlugin {
 
         const oldGetSemanticDiagnostics = languageService.getSemanticDiagnostics.bind(languageService);
         languageService.getSemanticDiagnostics = (fileName: string) => {
-            const diagnostics = oldGetSemanticDiagnostics(fileName);
-
-            if (this.config.suppressWhileTypeErrorsPresent && diagnostics.length > 0) {
-                return diagnostics;
-            }
-
-            try {
-                this.logger.info(`Computing tslint semantic diagnostics...`);
-                if (this.codeFixActions.has(fileName)) {
-                    this.codeFixActions.delete(fileName);
-                }
-
-                if (this.config.ignoreDefinitionFiles === true && fileName.endsWith('.d.ts')) {
-                    return diagnostics;
-                }
-
-                let result: RunResult;
-                try { // protect against tslint crashes
-                    result = this.runner.runTsLint(fileName, this.getProgram(), {
-                        configFile: this.config.configFile,
-                        ignoreDefinitionFiles: this.config.ignoreDefinitionFiles,
-                    });
-                    if (result.configFilePath) {
-                        this.configFileWatcher.ensureWatching(result.configFilePath);
-                    }
-                } catch (err) {
-                    let errorMessage = `unknown error`;
-                    if (typeof err.message === 'string' || err.message instanceof String) {
-                        errorMessage = err.message as string;
-                    }
-                    this.logger.info('tslint error ' + errorMessage);
-                    return diagnostics;
-                }
-
-                const file = this.getProgram().getSourceFile(fileName)!;
-
-                for (const warning of result.warnings) {
-                    this.logger.info(`[tslint] ${warning}`);
-                    diagnostics.push({
-                        code: TSLINT_ERROR_CODE,
-                        source: TSLINT_ERROR_SOURCE,
-                        category: this.ts.DiagnosticCategory.Error,
-                        file,
-                        start: 0,
-                        length: 1,
-                        messageText: warning,
-                    });
-                }
-
-                const tslintProblems = filterProblemsForFile(fileName, result.lintResult.failures);
-                for (const problem of tslintProblems) {
-                    diagnostics.push(this.makeDiagnostic(problem, file));
-                    this.recordCodeAction(problem, file);
-                }
-            } catch (e) {
-                this.logger.info(`tslint-language service error: ${e.toString()}`);
-                this.logger.info(`Stack trace: ${e.stack}`);
-            }
-
-            return diagnostics;
+            return this.getSemanticDiagnostics(oldGetSemanticDiagnostics, fileName);
         };
 
         const getCodeFixesAtPosition = languageService.getCodeFixesAtPosition.bind(languageService);
@@ -182,6 +123,72 @@ export class TSLintPlugin {
         };
 
         return languageService;
+    }
+
+    private getSemanticDiagnostics(
+        delegate: (fileName: string) => ts_module.Diagnostic[],
+        fileName: string,
+    ) {
+        const diagnostics = delegate(fileName);
+
+        if (this.config.suppressWhileTypeErrorsPresent && diagnostics.length > 0) {
+            return diagnostics;
+        }
+
+        try {
+            this.logger.info(`Computing tslint semantic diagnostics...`);
+            if (this.codeFixActions.has(fileName)) {
+                this.codeFixActions.delete(fileName);
+            }
+
+            if (this.config.ignoreDefinitionFiles === true && fileName.endsWith('.d.ts')) {
+                return diagnostics;
+            }
+
+            let result: RunResult;
+            try { // protect against tslint crashes
+                result = this.runner.runTsLint(fileName, this.getProgram(), {
+                    configFile: this.config.configFile,
+                    ignoreDefinitionFiles: this.config.ignoreDefinitionFiles,
+                });
+                if (result.configFilePath) {
+                    this.configFileWatcher.ensureWatching(result.configFilePath);
+                }
+            } catch (err) {
+                let errorMessage = `unknown error`;
+                if (typeof err.message === 'string' || err.message instanceof String) {
+                    errorMessage = err.message as string;
+                }
+                this.logger.info('tslint error ' + errorMessage);
+                return diagnostics;
+            }
+
+            const file = this.getProgram().getSourceFile(fileName)!;
+
+            for (const warning of result.warnings) {
+                this.logger.info(`[tslint] ${warning}`);
+                diagnostics.push({
+                    code: TSLINT_ERROR_CODE,
+                    source: TSLINT_ERROR_SOURCE,
+                    category: this.ts.DiagnosticCategory.Error,
+                    file,
+                    start: 0,
+                    length: 1,
+                    messageText: warning,
+                });
+            }
+
+            const tslintProblems = filterProblemsForFile(fileName, result.lintResult.failures);
+            for (const problem of tslintProblems) {
+                diagnostics.push(this.makeDiagnostic(problem, file));
+                this.recordCodeAction(problem, file);
+            }
+        } catch (e) {
+            this.logger.info(`tslint-language service error: ${e.toString()}`);
+            this.logger.info(`Stack trace: ${e.stack}`);
+        }
+
+        return diagnostics;
     }
 
     private recordCodeAction(problem: tslint.RuleFailure, file: ts.SourceFile) {

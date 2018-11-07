@@ -181,7 +181,7 @@ export class TSLintPlugin {
             return fixes;
         }
 
-        this.logger.info(`tslint-language-service getCodeFixes ${errorCodes[0]}`);
+        this.logger.info(`getCodeFixes ${errorCodes[0]}`);
 
         const documentFixes = this.codeFixActions.get(fileName);
         if (documentFixes) {

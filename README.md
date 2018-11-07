@@ -223,7 +223,7 @@ To setup the stable version for debugging, you need to set the environment varia
 - cd to the `dev` folder
 - `code .`
 
-To debug the tslint-language-service plugin press `F5`. The `dev` workspace has a launch configuration that attaches through port 5859 to the language server. 
+To debug the plugin press `F5`. The `dev` workspace has a launch configuration that attaches through port 5859 to the language server. 
 
 # Credits
 

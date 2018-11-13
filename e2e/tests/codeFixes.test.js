@@ -26,7 +26,7 @@ const getCodeFixes = (fileContents, data) => {
         startOffset: data.startOffset,
         endLine: data.endLine,
         endOffset: data.endOffset,
-        errorCodes: [100000]
+        errorCodes: [1]
     });
 
     return server.close().then(_ => {

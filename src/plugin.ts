@@ -43,7 +43,7 @@ export class TSLintPlugin {
         this.logger.info('loaded');
         this.config = loadSettingsFromPluginConfig(config, project.getCurrentDirectory());
 
-        this.runner = new TsLintRunner(() => { });
+        this.runner = new TsLintRunner(message => { this.logger.info(message); });
 
         // Watch config file for changes
         if (project instanceof ts.server.ConfiguredProject && ts.sys.watchFile) {

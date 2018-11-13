@@ -183,12 +183,8 @@ export class TsLintRunner {
         });
     }
 
-    private getGlobalPackageManagerPath(packageManager: string | undefined): string | undefined {
+    private getGlobalPackageManagerPath(packageManager: string = 'npm'): string | undefined {
         this.trace(`Begin - Resolve Global Package Manager Path for: ${packageManager}`);
-
-        if (!packageManager) {
-            packageManager = 'npm';
-        }
 
         if (!this.globalPackageManagerPath.has(packageManager)) {
             let path: string | undefined;

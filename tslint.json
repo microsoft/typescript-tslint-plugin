@@ -59,7 +59,7 @@
 	"rulesDirectory": [],
 	"linterOptions": {
 		"exclude": [
-			"e2e"
+			"e2e/**/*"
 		]
 	}
 }

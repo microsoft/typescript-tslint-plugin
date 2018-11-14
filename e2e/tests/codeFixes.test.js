@@ -128,7 +128,7 @@ describe('CodeFixes', () => {
                                     "line": 1,
                                     "offset": 1
                                 },
-                                "newText": "// tslint:disable-next-line:array-type\n"
+                                "newText": "// tslint:disable-next-line: array-type\n"
                             }
                         ]
                     }
@@ -314,7 +314,7 @@ describe('CodeFixes', () => {
                                     "line": 1,
                                     "offset": 1
                                 },
-                                "newText": "// tslint:disable-next-line:array-type\n"
+                                "newText": "// tslint:disable-next-line: array-type\n"
                             }
                         ]
                     }

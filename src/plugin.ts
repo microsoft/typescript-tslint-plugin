@@ -267,7 +267,7 @@ export class TSLintPlugin {
             changes: [{
                 fileName,
                 textChanges: [{
-                    newText: `// tslint:disable-next-line:${problem.getRuleName()}\n`,
+                    newText: `// tslint:disable-next-line: ${problem.getRuleName()}\n`,
                     span: { start: file.getLineStarts()[problem.getStartPosition().getLineAndCharacter().line], length: 0 },
                 }],
             }],

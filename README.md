@@ -26,10 +26,11 @@ See [editor support](#editor-support) for more detailed setup instructions.
 
 ## Configuration options
 
-**Notice**: This configuration settings allow you to configure the behaviour of the typescript-tslint-plugin itself. To configure rules and tslint options you should use the `tslint.json` file.
+**Notice**: This configuration settings allow you to configure the behavior of the typescript-tslint-plugin itself. To configure rules and tslint options you should use the `tslint.json` file.
 
  * `configFile` - The configuration file that tslint should use instead of the default tslint.json. A relative file path is resolved relative to the project root.
- * `ignoreDefinitionFiles` - Control if TypeScript definition files should be ignored.
+ * `jsEnable` - Enable/disable tslint for `.js` files, default is `false`.
+ * `ignoreDefinitionFiles` - Control if TypeScript definition files should be ignored. Default is `true`
  * `alwaysShowRuleFailuresAsWarnings` - Always show rule failures as warnings, ignoring the severity configuration in the tslint.json configuration.
  * `disableNoUnusedVariableRule` - Disable `no-unused-variable` rule.
  * `suppressWhileTypeErrorsPresent` - Suppress tslint errors from being reported while other errors are present.

@@ -124,7 +124,7 @@ export class TSLintPlugin {
                 result = this.runner.runTsLint(fileName, this.getProgram(), {
                     configFile: this.config.configFile,
                     ignoreDefinitionFiles: this.config.ignoreDefinitionFiles,
-                    jsEnable: true,
+                    jsEnable: this.config.jsEnable,
                 });
                 if (result.configFilePath) {
                     this.configFileWatcher.ensureWatching(result.configFilePath);

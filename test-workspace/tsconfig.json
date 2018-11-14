@@ -6,7 +6,6 @@
                 "alwaysShowRuleFailuresAsWarnings": false,
                 "ignoreDefinitionFiles": true
                 //"configFile": "../tslint.json",
-                //"disableNoUnusedVariableRule": false
             }
         ],
         "module": "commonjs",

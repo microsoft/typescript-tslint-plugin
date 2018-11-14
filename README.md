@@ -32,7 +32,6 @@ See [editor support](#editor-support) for more detailed setup instructions.
  * `jsEnable` - Enable/disable tslint for `.js` files, default is `false`.
  * `ignoreDefinitionFiles` - Control if TypeScript definition files should be ignored. Default is `true`
  * `alwaysShowRuleFailuresAsWarnings` - Always show rule failures as warnings, ignoring the severity configuration in the tslint.json configuration.
- * `disableNoUnusedVariableRule` - Disable `no-unused-variable` rule.
  * `suppressWhileTypeErrorsPresent` - Suppress tslint errors from being reported while other errors are present.
 
 Here is a configuration sample:
@@ -46,7 +45,6 @@ Here is a configuration sample:
         "alwaysShowRuleFailuresAsWarnings": false,
         "ignoreDefinitionFiles": true,
         "configFile": "../tslint.json",
-        "disableNoUnusedVariableRule": false,
         "suppressWhileTypeErrorsPresent": false,
         "mockTypeScriptVersion": false
       }

@@ -78,10 +78,10 @@ export class TSLintPlugin {
 
     public decorate(languageService: ts.LanguageService) {
         const oldGetSupportedCodeFixes = this.ts.getSupportedCodeFixes.bind(this.ts);
-        this.ts.getSupportedCodeFixes = () => {
+        this.ts.getSupportedCodeFixes = (): string[] => {
             return [
                 ...oldGetSupportedCodeFixes(),
-                TSLINT_ERROR_CODE,
+                '' + TSLINT_ERROR_CODE,
             ];
         };
 
@@ -167,7 +167,7 @@ export class TSLintPlugin {
     }
 
     private getCodeFixesAtPosition(
-        delegate: (fileName: string, start: number, end: number, errorCodes: number[], formatOptions: ts.FormatCodeSettings, userPreferences: ts.UserPreferences) => ts.CodeFixAction[],
+        delegate: ts.LanguageService['getCodeFixesAtPosition'],
         fileName: string,
         start: number,
         end: number,
@@ -175,7 +175,7 @@ export class TSLintPlugin {
         formatOptions: ts.FormatCodeSettings,
         userPreferences: ts.UserPreferences
     ): ReadonlyArray<ts.CodeFixAction> {
-        const fixes = delegate(fileName, start, end, errorCodes, formatOptions, userPreferences);
+        const fixes = Array.from(delegate(fileName, start, end, errorCodes, formatOptions, userPreferences));
 
         if (this.config.suppressWhileTypeErrorsPresent && fixes.length > 0) {
             return fixes;

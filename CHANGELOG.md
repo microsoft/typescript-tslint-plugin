@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.0.7 - November 15, 2018
+- Fix potential state corruption error when using TS 3.2.
+
 ## 0.0.6 - November 13, 2018
 - Add `enableJs` option to enable/disable validating js. Default to `false`.
 

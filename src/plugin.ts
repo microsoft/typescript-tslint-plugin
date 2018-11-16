@@ -4,7 +4,7 @@ import { TSLINT_ERROR_CODE, TSLINT_ERROR_SOURCE } from './config';
 import { ConfigFileWatcher } from './configFileWatcher';
 import { Logger } from './logger';
 import { RunResult, TsLintRunner } from './runner';
-import { Settings, loadSettingsFromPluginConfig, loadSettingsFromTsConfig } from './settings';
+import { ConfigurationManager } from './settings';
 import { getNonOverlappingReplacements, filterProblemsForFile } from './runner/failures';
 
 class FailureMap {
@@ -31,48 +31,27 @@ class FailureMap {
 export class TSLintPlugin {
     private readonly codeFixActions = new Map<string, FailureMap>();
     private readonly configFileWatcher: ConfigFileWatcher;
-    private config: Settings;
     private readonly runner: TsLintRunner;
 
     public constructor(
         private readonly ts: typeof ts_module,
         private readonly logger: Logger,
         private readonly project: ts_module.server.Project,
-        config: any,
+        private readonly configurationManager: ConfigurationManager,
     ) {
         this.logger.info('loaded');
-        this.config = loadSettingsFromPluginConfig(config, project.getCurrentDirectory());
 
         this.runner = new TsLintRunner(message => { this.logger.info(message); });
-
-        // Watch config file for changes
-        if (project instanceof ts.server.ConfiguredProject && ts.sys.watchFile) {
-            const configFile = project.getConfigFilePath();
-            this.logger.info(`Found configured project: ${configFile}`);
-
-            ts.sys.watchFile(configFile, (_fileName: string, eventKind: ts.FileWatcherEventKind) => {
-                if (eventKind !== ts.FileWatcherEventKind.Changed) {
-                    return;
-                }
-
-                this.logger.info('TSConfig file changed');
-
-                const newConfig = loadSettingsFromTsConfig(ts, configFile, this.project.getCurrentDirectory());
-                if (!newConfig) {
-                    this.logger.info(`Could not read new config`);
-                    return;
-                }
-
-                this.logger.info(`Updating config settings: ${JSON.stringify(newConfig)}`);
-                this.config = newConfig;
-                this.project.refreshDiagnostics();
-            });
-        }
 
         this.configFileWatcher = new ConfigFileWatcher(ts, filePath => {
             this.logger.info('TSlint file changed');
             this.runner.onConfigFileChange(filePath);
             this.project.refreshDiagnostics();
+        });
+
+        this.configurationManager.onUpdatedConfig(() => {
+            this.logger.info('TSConfig configuration changed');
+            project.refreshDiagnostics();
         });
     }
 
@@ -104,7 +83,8 @@ export class TSLintPlugin {
     ): ts_module.Diagnostic[] {
         const diagnostics = delegate(fileName);
 
-        if (this.config.suppressWhileTypeErrorsPresent && diagnostics.length > 0) {
+        const config = this.configurationManager.config;
+        if (diagnostics.length > 0 && config.suppressWhileTypeErrorsPresent) {
             return diagnostics;
         }
 
@@ -115,16 +95,16 @@ export class TSLintPlugin {
                 this.codeFixActions.delete(fileName);
             }
 
-            if (this.config.ignoreDefinitionFiles === true && fileName.endsWith('.d.ts')) {
+            if (config.ignoreDefinitionFiles === true && fileName.endsWith('.d.ts')) {
                 return diagnostics;
             }
 
             let result: RunResult;
             try { // protect against tslint crashes
                 result = this.runner.runTsLint(fileName, this.getProgram(), {
-                    configFile: this.config.configFile,
-                    ignoreDefinitionFiles: this.config.ignoreDefinitionFiles,
-                    jsEnable: this.config.jsEnable,
+                    configFile: config.configFile,
+                    ignoreDefinitionFiles: config.ignoreDefinitionFiles,
+                    jsEnable: config.jsEnable,
                 });
                 if (result.configFilePath) {
                     this.configFileWatcher.ensureWatching(result.configFilePath);
@@ -177,7 +157,7 @@ export class TSLintPlugin {
     ): ReadonlyArray<ts.CodeFixAction> {
         const fixes = Array.from(delegate(fileName, start, end, errorCodes, formatOptions, userPreferences));
 
-        if (this.config.suppressWhileTypeErrorsPresent && fixes.length > 0) {
+        if (this.configurationManager.config.suppressWhileTypeErrorsPresent && fixes.length > 0) {
             return fixes;
         }
 
@@ -309,7 +289,7 @@ export class TSLintPlugin {
     }
 
     private getDiagnosticCategory(problem: tslint.RuleFailure): ts.DiagnosticCategory {
-        if (this.config.alwaysShowRuleFailuresAsWarnings === true) {
+        if (this.configurationManager.config.alwaysShowRuleFailuresAsWarnings === true) {
             return this.ts.DiagnosticCategory.Warning;
         } else if (problem.getRuleSeverity && problem.getRuleSeverity() === 'error') {
             // tslint5 supports to assign severities to rules

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0 - November 16, 2018
+- Add support for configuring the plugin from an editor.
+- Correctly observe changes to the `tsconfig`/`jsconfig`.
+- Fix error that could cause duplicate tslint errors to be reported.
+
 ## 0.0.7 - November 15, 2018
 - Fix potential state corruption error when using TS 3.2.
 

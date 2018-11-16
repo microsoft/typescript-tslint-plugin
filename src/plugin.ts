@@ -7,6 +7,8 @@ import { RunResult, TsLintRunner } from './runner';
 import { ConfigurationManager } from './settings';
 import { getNonOverlappingReplacements, filterProblemsForFile } from './runner/failures';
 
+const isTsLintLanguageServiceMarker = Symbol('__isTsLintLanguageServiceMarker__');
+
 class FailureMap {
     private readonly _map = new Map<string, tslint.RuleFailure>();
 
@@ -56,25 +58,39 @@ export class TSLintPlugin {
     }
 
     public decorate(languageService: ts.LanguageService) {
+        if ((languageService as any)[isTsLintLanguageServiceMarker]) {
+            // Already decorated
+            return;
+        }
+
         const oldGetSupportedCodeFixes = this.ts.getSupportedCodeFixes.bind(this.ts);
         this.ts.getSupportedCodeFixes = (): string[] => {
             return [
-                ...oldGetSupportedCodeFixes(),
+                ... oldGetSupportedCodeFixes(),
                 '' + TSLINT_ERROR_CODE,
             ];
         };
 
+        const intercept: Partial<ts.LanguageService> = Object.create(null);
+
         const oldGetSemanticDiagnostics = languageService.getSemanticDiagnostics.bind(languageService);
-        languageService.getSemanticDiagnostics = (fileName: string) => {
+        intercept.getSemanticDiagnostics = (fileName: string) => {
             return this.getSemanticDiagnostics(oldGetSemanticDiagnostics, fileName);
         };
 
-        const getCodeFixesAtPosition = languageService.getCodeFixesAtPosition.bind(languageService);
-        languageService.getCodeFixesAtPosition = (fileName: string, start: number, end: number, errorCodes: number[], formatOptions: ts.FormatCodeSettings, userPreferences: ts.UserPreferences): ReadonlyArray<ts.CodeFixAction> => {
-            return this.getCodeFixesAtPosition(getCodeFixesAtPosition, fileName, start, end, errorCodes, formatOptions, userPreferences);
+        const oldGetCodeFixesAtPosition = languageService.getCodeFixesAtPosition.bind(languageService);
+        intercept.getCodeFixesAtPosition = (fileName: string, start: number, end: number, errorCodes: number[], formatOptions: ts.FormatCodeSettings, userPreferences: ts.UserPreferences): ReadonlyArray<ts.CodeFixAction> => {
+            return this.getCodeFixesAtPosition(oldGetCodeFixesAtPosition, fileName, start, end, errorCodes, formatOptions, userPreferences);
         };
 
-        return languageService;
+        return new Proxy(languageService, {
+            get: (target: any, property: string | symbol) => {
+                if (property === isTsLintLanguageServiceMarker) {
+                    return true;
+                }
+                return (intercept as any)[property] || target[property];
+            },
+        });
     }
 
     private getSemanticDiagnostics(

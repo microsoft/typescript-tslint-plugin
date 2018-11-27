@@ -2,10 +2,15 @@ import { TSLintPlugin } from './plugin';
 import * as ts_module from 'typescript/lib/tsserverlibrary';
 import { Logger } from './logger';
 import { ConfigurationManager } from './settings';
+import * as mockRequire from 'mock-require';
 
 export = function init({ typescript }: { typescript: typeof ts_module }) {
     const configManager = new ConfigurationManager(typescript);
     let logger: Logger | undefined;
+
+    // Make sure TS Lint imports the correct version of TS
+    mockRequire('typescript', typescript);
+
     return {
         create(info: ts.server.PluginCreateInfo) {
             logger = Logger.forPlugin(info);

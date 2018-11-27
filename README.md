@@ -57,7 +57,7 @@ Here is a configuration sample:
 
 
 # Editor Support
-This plugin requires TypeScript 2.4 or later. It can provide intellisense in both JavaScript and TypeScript files within any editors that uses TypeScript to power their language features.
+This plugin requires TypeScript 2.9 or later. It can provide intellisense in both JavaScript and TypeScript files within any editors that uses TypeScript to power their language features.
 
 ## With VS Code
 *If you also have the [vscode-tslint](https://marketplace.visualstudio.com/items?itemName=eg2.tslint) extension in VS Code installed, please disable it to avoid that files are linted twice.*

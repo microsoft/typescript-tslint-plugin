@@ -209,23 +209,23 @@ export class TSLintPlugin {
         return fixes;
     }
 
-    private recordCodeAction(problem: tslint.RuleFailure, file: ts.SourceFile) {
+    private recordCodeAction(failure: tslint.RuleFailure, file: ts.SourceFile) {
         // tslint can return a fix with an empty replacements array, these fixes are ignored
-        const fixable = !!(problem.getFix && problem.getFix() && !replacementsAreEmpty(problem.getFix()));
+        const fixable = !!(failure.getFix && failure.getFix() && !replacementsAreEmpty(failure.getFix()));
 
         let documentAutoFixes = this.codeFixActions.get(file.fileName);
         if (!documentAutoFixes) {
             documentAutoFixes = new ProblemMap();
             this.codeFixActions.set(file.fileName, documentAutoFixes);
         }
-        documentAutoFixes.set(problem.getStartPosition().getPosition(), problem.getEndPosition().getPosition(), { failure: problem, fixable });
+        documentAutoFixes.set(failure.getStartPosition().getPosition(), failure.getEndPosition().getPosition(), { failure, fixable });
     }
 
-    private getRuleFailureQuickFix(problem: tslint.RuleFailure, fileName: string): ts_module.CodeFixAction {
+    private getRuleFailureQuickFix(failure: tslint.RuleFailure, fileName: string): ts_module.CodeFixAction {
         return {
-            description: `Fix: ${problem.getFailure()}`,
+            description: `Fix: ${failure.getFailure()}`,
             fixName: '',
-            changes: [problemToFileTextChange(problem, fileName)],
+            changes: [failureToFileTextChange(failure, fileName)],
         };
     }
 
@@ -238,7 +238,7 @@ export class TSLintPlugin {
         for (const problem of problems.values()) {
             if (problem.fixable) {
                 if (problem.failure.getRuleName() === ruleName) {
-                    changes.push(problemToFileTextChange(problem.failure, fileName));
+                    changes.push(failureToFileTextChange(problem.failure, fileName));
                 }
             }
         }
@@ -255,15 +255,15 @@ export class TSLintPlugin {
         };
     }
 
-    private getDisableRuleQuickFix(problem: tslint.RuleFailure, fileName: string, file: ts_module.SourceFile): ts_module.CodeFixAction {
+    private getDisableRuleQuickFix(failure: tslint.RuleFailure, fileName: string, file: ts_module.SourceFile): ts_module.CodeFixAction {
         return {
-            description: `Disable rule '${problem.getRuleName()}'`,
+            description: `Disable rule '${failure.getRuleName()}'`,
             fixName: '',
             changes: [{
                 fileName,
                 textChanges: [{
-                    newText: `// tslint:disable-next-line: ${problem.getRuleName()}\n`,
-                    span: { start: file.getLineStarts()[problem.getStartPosition().getLineAndCharacter().line], length: 0 },
+                    newText: `// tslint:disable-next-line: ${failure.getRuleName()}\n`,
+                    span: { start: file.getLineStarts()[failure.getStartPosition().getLineAndCharacter().line], length: 0 },
                 }],
             }],
         };
@@ -285,17 +285,17 @@ export class TSLintPlugin {
         return this.project.getLanguageService().getProgram()!;
     }
 
-    private makeDiagnostic(problem: tslint.RuleFailure, file: ts.SourceFile): ts.Diagnostic {
-        const message = (problem.getRuleName() !== null)
-            ? `${problem.getFailure()} (${problem.getRuleName()})`
-            : `${problem.getFailure()}`;
+    private makeDiagnostic(failure: tslint.RuleFailure, file: ts.SourceFile): ts.Diagnostic {
+        const message = (failure.getRuleName() !== null)
+            ? `${failure.getFailure()} (${failure.getRuleName()})`
+            : `${failure.getFailure()}`;
 
-        const category = this.getDiagnosticCategory(problem);
+        const category = this.getDiagnosticCategory(failure);
 
         return {
             file,
-            start: problem.getStartPosition().getPosition(),
-            length: problem.getEndPosition().getPosition() - problem.getStartPosition().getPosition(),
+            start: failure.getStartPosition().getPosition(),
+            length: failure.getEndPosition().getPosition() - failure.getStartPosition().getPosition(),
             messageText: message,
             category,
             source: TSLINT_ERROR_SOURCE,
@@ -303,10 +303,10 @@ export class TSLintPlugin {
         };
     }
 
-    private getDiagnosticCategory(problem: tslint.RuleFailure): ts.DiagnosticCategory {
+    private getDiagnosticCategory(failure: tslint.RuleFailure): ts.DiagnosticCategory {
         if (this.configurationManager.config.alwaysShowRuleFailuresAsWarnings === true) {
             return this.ts.DiagnosticCategory.Warning;
-        } else if (problem.getRuleSeverity && problem.getRuleSeverity() === 'error') {
+        } else if (failure.getRuleSeverity && failure.getRuleSeverity() === 'error') {
             // tslint5 supports to assign severities to rules
             return this.ts.DiagnosticCategory.Error;
         }
@@ -338,8 +338,8 @@ function convertReplacementToTextChange(repl: tslint.Replacement): ts_module.Tex
     };
 }
 
-function problemToFileTextChange(problem: tslint.RuleFailure, fileName: string): ts_module.FileTextChanges {
-    const fix = problem.getFix();
+function failureToFileTextChange(failure: tslint.RuleFailure, fileName: string): ts_module.FileTextChanges {
+    const fix = failure.getFix();
     const replacements: tslint.Replacement[] = getReplacements(fix);
 
     return {

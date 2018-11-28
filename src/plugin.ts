@@ -9,15 +9,20 @@ import { getNonOverlappingReplacements, filterProblemsForFile } from './runner/f
 
 const isTsLintLanguageServiceMarker = Symbol('__isTsLintLanguageServiceMarker__');
 
-class FailureMap {
-    private readonly _map = new Map<string, tslint.RuleFailure>();
+interface Problem {
+    failure: tslint.RuleFailure;
+    fixable: boolean;
+}
+
+class ProblemMap {
+    private readonly _map = new Map<string, Problem>();
 
     public get(start: number, end: number) {
         return this._map.get(this.key(start, end));
     }
 
-    public set(start: number, end: number, failure: tslint.RuleFailure): void {
-        this._map.set(this.key(start, end), failure);
+    public set(start: number, end: number, problem: Problem): void {
+        this._map.set(this.key(start, end), problem);
     }
 
     public values() {
@@ -31,7 +36,7 @@ class FailureMap {
 }
 
 export class TSLintPlugin {
-    private readonly codeFixActions = new Map<string, FailureMap>();
+    private readonly codeFixActions = new Map<string, ProblemMap>();
     private readonly configFileWatcher: ConfigFileWatcher;
     private readonly runner: TsLintRunner;
 
@@ -182,12 +187,12 @@ export class TSLintPlugin {
         const documentFixes = this.codeFixActions.get(fileName);
         if (documentFixes) {
             const problem = documentFixes.get(start, end);
-            if (problem) {
-                const fix = problem.getFix();
+            if (problem && problem.fixable) {
+                const fix = problem.failure.getFix();
                 if (fix) {
-                    fixes.push(this.getRuleFailureQuickFix(problem, fileName));
+                    fixes.push(this.getRuleFailureQuickFix(problem.failure, fileName));
 
-                    const fixAll = this.getRuleFailureFixAllQuickFix(problem.getRuleName(), documentFixes, fileName);
+                    const fixAll = this.getRuleFailureFixAllQuickFix(problem.failure.getRuleName(), documentFixes, fileName);
                     if (fixAll) {
                         fixes.push(fixAll);
                     }
@@ -197,7 +202,7 @@ export class TSLintPlugin {
             fixes.push(this.getFixAllAutoFixableQuickFix(documentFixes, fileName));
 
             if (problem) {
-                fixes.push(this.getDisableRuleQuickFix(problem, fileName, this.getProgram().getSourceFile(fileName)!));
+                fixes.push(this.getDisableRuleQuickFix(problem.failure, fileName, this.getProgram().getSourceFile(fileName)!));
             }
         }
 
@@ -205,23 +210,15 @@ export class TSLintPlugin {
     }
 
     private recordCodeAction(problem: tslint.RuleFailure, file: ts.SourceFile) {
-        let fix: tslint.Fix | undefined;
-
         // tslint can return a fix with an empty replacements array, these fixes are ignored
-        if (problem.getFix && problem.getFix() && !replacementsAreEmpty(problem.getFix())) { // tslint fixes are not available in tslint < 3.17
-            fix = problem.getFix(); // createAutoFix(problem, document, problem.getFix());
-        }
-
-        if (!fix) {
-            return;
-        }
+        const fixable = !!(problem.getFix && problem.getFix() && !replacementsAreEmpty(problem.getFix()));
 
         let documentAutoFixes = this.codeFixActions.get(file.fileName);
         if (!documentAutoFixes) {
-            documentAutoFixes = new FailureMap();
+            documentAutoFixes = new ProblemMap();
             this.codeFixActions.set(file.fileName, documentAutoFixes);
         }
-        documentAutoFixes.set(problem.getStartPosition().getPosition(), problem.getEndPosition().getPosition(), problem);
+        documentAutoFixes.set(problem.getStartPosition().getPosition(), problem.getEndPosition().getPosition(), { failure: problem, fixable });
     }
 
     private getRuleFailureQuickFix(problem: tslint.RuleFailure, fileName: string): ts_module.CodeFixAction {
@@ -235,12 +232,14 @@ export class TSLintPlugin {
     /**
      * Generate a code action that fixes all instances of ruleName.
      */
-    private getRuleFailureFixAllQuickFix(ruleName: string, problems: FailureMap, fileName: string): ts_module.CodeFixAction | undefined {
+    private getRuleFailureFixAllQuickFix(ruleName: string, problems: ProblemMap, fileName: string): ts_module.CodeFixAction | undefined {
         const changes: ts_module.FileTextChanges[] = [];
 
         for (const problem of problems.values()) {
-            if (problem.getRuleName() === ruleName) {
-                changes.push(problemToFileTextChange(problem, fileName));
+            if (problem.fixable) {
+                if (problem.failure.getRuleName() === ruleName) {
+                    changes.push(problemToFileTextChange(problem.failure, fileName));
+                }
             }
         }
 
@@ -270,8 +269,8 @@ export class TSLintPlugin {
         };
     }
 
-    private getFixAllAutoFixableQuickFix(documentFixes: FailureMap, fileName: string): ts_module.CodeFixAction {
-        const allReplacements = getNonOverlappingReplacements(Array.from(documentFixes.values()));
+    private getFixAllAutoFixableQuickFix(documentFixes: ProblemMap, fileName: string): ts_module.CodeFixAction {
+        const allReplacements = getNonOverlappingReplacements(Array.from(documentFixes.values()).filter(x => x.fixable).map(x => x.failure));
         return {
             description: `Fix all auto-fixable tslint failures`,
             fixName: '',

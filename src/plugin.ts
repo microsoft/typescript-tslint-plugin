@@ -9,15 +9,20 @@ import { getNonOverlappingReplacements, filterProblemsForFile } from './runner/f
 
 const isTsLintLanguageServiceMarker = Symbol('__isTsLintLanguageServiceMarker__');
 
-class FailureMap {
-    private readonly _map = new Map<string, tslint.RuleFailure>();
+interface Problem {
+    failure: tslint.RuleFailure;
+    fixable: boolean;
+}
+
+class ProblemMap {
+    private readonly _map = new Map<string, Problem>();
 
     public get(start: number, end: number) {
         return this._map.get(this.key(start, end));
     }
 
-    public set(start: number, end: number, failure: tslint.RuleFailure): void {
-        this._map.set(this.key(start, end), failure);
+    public set(start: number, end: number, problem: Problem): void {
+        this._map.set(this.key(start, end), problem);
     }
 
     public values() {
@@ -31,7 +36,7 @@ class FailureMap {
 }
 
 export class TSLintPlugin {
-    private readonly codeFixActions = new Map<string, FailureMap>();
+    private readonly codeFixActions = new Map<string, ProblemMap>();
     private readonly configFileWatcher: ConfigFileWatcher;
     private readonly runner: TsLintRunner;
 
@@ -182,12 +187,12 @@ export class TSLintPlugin {
         const documentFixes = this.codeFixActions.get(fileName);
         if (documentFixes) {
             const problem = documentFixes.get(start, end);
-            if (problem) {
-                const fix = problem.getFix();
+            if (problem && problem.fixable) {
+                const fix = problem.failure.getFix();
                 if (fix) {
-                    fixes.push(this.getRuleFailureQuickFix(problem, fileName));
+                    fixes.push(this.getRuleFailureQuickFix(problem.failure, fileName));
 
-                    const fixAll = this.getRuleFailureFixAllQuickFix(problem.getRuleName(), documentFixes, fileName);
+                    const fixAll = this.getRuleFailureFixAllQuickFix(problem.failure.getRuleName(), documentFixes, fileName);
                     if (fixAll) {
                         fixes.push(fixAll);
                     }
@@ -197,50 +202,44 @@ export class TSLintPlugin {
             fixes.push(this.getFixAllAutoFixableQuickFix(documentFixes, fileName));
 
             if (problem) {
-                fixes.push(this.getDisableRuleQuickFix(problem, fileName, this.getProgram().getSourceFile(fileName)!));
+                fixes.push(this.getDisableRuleQuickFix(problem.failure, fileName, this.getProgram().getSourceFile(fileName)!));
             }
         }
 
         return fixes;
     }
 
-    private recordCodeAction(problem: tslint.RuleFailure, file: ts.SourceFile) {
-        let fix: tslint.Fix | undefined;
-
+    private recordCodeAction(failure: tslint.RuleFailure, file: ts.SourceFile) {
         // tslint can return a fix with an empty replacements array, these fixes are ignored
-        if (problem.getFix && problem.getFix() && !replacementsAreEmpty(problem.getFix())) { // tslint fixes are not available in tslint < 3.17
-            fix = problem.getFix(); // createAutoFix(problem, document, problem.getFix());
-        }
-
-        if (!fix) {
-            return;
-        }
+        const fixable = !!(failure.getFix && failure.getFix() && !replacementsAreEmpty(failure.getFix()));
 
         let documentAutoFixes = this.codeFixActions.get(file.fileName);
         if (!documentAutoFixes) {
-            documentAutoFixes = new FailureMap();
+            documentAutoFixes = new ProblemMap();
             this.codeFixActions.set(file.fileName, documentAutoFixes);
         }
-        documentAutoFixes.set(problem.getStartPosition().getPosition(), problem.getEndPosition().getPosition(), problem);
+        documentAutoFixes.set(failure.getStartPosition().getPosition(), failure.getEndPosition().getPosition(), { failure, fixable });
     }
 
-    private getRuleFailureQuickFix(problem: tslint.RuleFailure, fileName: string): ts_module.CodeFixAction {
+    private getRuleFailureQuickFix(failure: tslint.RuleFailure, fileName: string): ts_module.CodeFixAction {
         return {
-            description: `Fix: ${problem.getFailure()}`,
+            description: `Fix: ${failure.getFailure()}`,
             fixName: '',
-            changes: [problemToFileTextChange(problem, fileName)],
+            changes: [failureToFileTextChange(failure, fileName)],
         };
     }
 
     /**
      * Generate a code action that fixes all instances of ruleName.
      */
-    private getRuleFailureFixAllQuickFix(ruleName: string, problems: FailureMap, fileName: string): ts_module.CodeFixAction | undefined {
+    private getRuleFailureFixAllQuickFix(ruleName: string, problems: ProblemMap, fileName: string): ts_module.CodeFixAction | undefined {
         const changes: ts_module.FileTextChanges[] = [];
 
         for (const problem of problems.values()) {
-            if (problem.getRuleName() === ruleName) {
-                changes.push(problemToFileTextChange(problem, fileName));
+            if (problem.fixable) {
+                if (problem.failure.getRuleName() === ruleName) {
+                    changes.push(failureToFileTextChange(problem.failure, fileName));
+                }
             }
         }
 
@@ -256,22 +255,22 @@ export class TSLintPlugin {
         };
     }
 
-    private getDisableRuleQuickFix(problem: tslint.RuleFailure, fileName: string, file: ts_module.SourceFile): ts_module.CodeFixAction {
+    private getDisableRuleQuickFix(failure: tslint.RuleFailure, fileName: string, file: ts_module.SourceFile): ts_module.CodeFixAction {
         return {
-            description: `Disable rule '${problem.getRuleName()}'`,
+            description: `Disable rule '${failure.getRuleName()}'`,
             fixName: '',
             changes: [{
                 fileName,
                 textChanges: [{
-                    newText: `// tslint:disable-next-line: ${problem.getRuleName()}\n`,
-                    span: { start: file.getLineStarts()[problem.getStartPosition().getLineAndCharacter().line], length: 0 },
+                    newText: `// tslint:disable-next-line: ${failure.getRuleName()}\n`,
+                    span: { start: file.getLineStarts()[failure.getStartPosition().getLineAndCharacter().line], length: 0 },
                 }],
             }],
         };
     }
 
-    private getFixAllAutoFixableQuickFix(documentFixes: FailureMap, fileName: string): ts_module.CodeFixAction {
-        const allReplacements = getNonOverlappingReplacements(Array.from(documentFixes.values()));
+    private getFixAllAutoFixableQuickFix(documentFixes: ProblemMap, fileName: string): ts_module.CodeFixAction {
+        const allReplacements = getNonOverlappingReplacements(Array.from(documentFixes.values()).filter(x => x.fixable).map(x => x.failure));
         return {
             description: `Fix all auto-fixable tslint failures`,
             fixName: '',
@@ -286,17 +285,17 @@ export class TSLintPlugin {
         return this.project.getLanguageService().getProgram()!;
     }
 
-    private makeDiagnostic(problem: tslint.RuleFailure, file: ts.SourceFile): ts.Diagnostic {
-        const message = (problem.getRuleName() !== null)
-            ? `${problem.getFailure()} (${problem.getRuleName()})`
-            : `${problem.getFailure()}`;
+    private makeDiagnostic(failure: tslint.RuleFailure, file: ts.SourceFile): ts.Diagnostic {
+        const message = (failure.getRuleName() !== null)
+            ? `${failure.getFailure()} (${failure.getRuleName()})`
+            : `${failure.getFailure()}`;
 
-        const category = this.getDiagnosticCategory(problem);
+        const category = this.getDiagnosticCategory(failure);
 
         return {
             file,
-            start: problem.getStartPosition().getPosition(),
-            length: problem.getEndPosition().getPosition() - problem.getStartPosition().getPosition(),
+            start: failure.getStartPosition().getPosition(),
+            length: failure.getEndPosition().getPosition() - failure.getStartPosition().getPosition(),
             messageText: message,
             category,
             source: TSLINT_ERROR_SOURCE,
@@ -304,10 +303,10 @@ export class TSLintPlugin {
         };
     }
 
-    private getDiagnosticCategory(problem: tslint.RuleFailure): ts.DiagnosticCategory {
+    private getDiagnosticCategory(failure: tslint.RuleFailure): ts.DiagnosticCategory {
         if (this.configurationManager.config.alwaysShowRuleFailuresAsWarnings === true) {
             return this.ts.DiagnosticCategory.Warning;
-        } else if (problem.getRuleSeverity && problem.getRuleSeverity() === 'error') {
+        } else if (failure.getRuleSeverity && failure.getRuleSeverity() === 'error') {
             // tslint5 supports to assign severities to rules
             return this.ts.DiagnosticCategory.Error;
         }
@@ -339,8 +338,8 @@ function convertReplacementToTextChange(repl: tslint.Replacement): ts_module.Tex
     };
 }
 
-function problemToFileTextChange(problem: tslint.RuleFailure, fileName: string): ts_module.FileTextChanges {
-    const fix = problem.getFix();
+function failureToFileTextChange(failure: tslint.RuleFailure, fileName: string): ts_module.FileTextChanges {
+    const fix = failure.getFix();
     const replacements: tslint.Replacement[] = getReplacements(fix);
 
     return {

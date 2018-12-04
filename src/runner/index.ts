@@ -441,5 +441,5 @@ function getConfigurationFailureMessage(err: any): string {
     if (typeof err.message === 'string' || err.message instanceof String) {
         errorMessage = err.message;
     }
-    return `vscode-tslint: Cannot read tslint configuration - '${errorMessage}'`;
+    return `Cannot read tslint configuration - '${errorMessage}'`;
 }

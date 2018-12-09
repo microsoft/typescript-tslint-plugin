@@ -67,10 +67,21 @@ describe('TSLintRunner', () => {
             expect(errorResult.lintResult.warningCount).to.equal(0);
         });
 
-        it('should not return any errors for excluded file', () => {
+        it('should not return any errors for excluded file (absolute path)', () => {
             const filePath = path.join(testDataRoot, 'with-tslint', 'test.ts');
             const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), {
                 exclude: [filePath],
+            } as RunConfiguration);
+
+            expect(result.lintResult.errorCount).to.equal(0);
+        });
+
+        it('should not return any errors for excluded file (relative path)', () => {
+            const root = path.join(testDataRoot, 'with-tslint');
+            const filePath = path.join(root, 'test.ts');
+            const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), {
+                workspaceFolderPath: root,
+                exclude: ['test.ts'],
             } as RunConfiguration);
 
             expect(result.lintResult.errorCount).to.equal(0);

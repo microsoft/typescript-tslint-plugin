@@ -1,7 +1,7 @@
 import * as cp from 'child_process';
 import * as fs from 'fs';
 import * as minimatch from 'minimatch';
-import { dirname, delimiter } from 'path';
+import { dirname, delimiter, relative } from 'path';
 import * as tslint from 'tslint'; // this is a dev dependency only
 import * as typescript from 'typescript'; // this is a dev dependency only
 import * as util from 'util';
@@ -208,14 +208,19 @@ export class TsLintRunner {
         this.trace('start doValidate ' + filePath);
         const uri = filePath;
 
-        if (this.fileIsExcluded(configuration, filePath)) {
+        let cwd = configuration.workspaceFolderPath;
+        if (!cwd && typeof contents === "object") {
+            cwd = contents.getCurrentDirectory();
+        }
+
+        if (this.fileIsExcluded(configuration, filePath, cwd)) {
             this.trace(`No linting: file ${filePath} is excluded`);
             return emptyResult;
         }
 
-        if (configuration.workspaceFolderPath) {
-            this.trace(`Changed directory to ${configuration.workspaceFolderPath}`);
-            process.chdir(configuration.workspaceFolderPath);
+        if (cwd) {
+            this.trace(`Changed directory to ${cwd}`);
+            process.chdir(cwd);
         }
 
         const configFile = configuration.configFile || null;
@@ -338,7 +343,7 @@ export class TsLintRunner {
         return this.configCache.configuration;
     }
 
-    private fileIsExcluded(settings: RunConfiguration, filePath: string): boolean {
+    private fileIsExcluded(settings: RunConfiguration, filePath: string, cwd: string | undefined): boolean {
         if (settings.ignoreDefinitionFiles) {
             if (filePath.endsWith('.d.ts')) {
                 return true;
@@ -348,11 +353,11 @@ export class TsLintRunner {
         if (settings.exclude) {
             if (Array.isArray(settings.exclude)) {
                 for (const pattern of settings.exclude) {
-                    if (testForExclusionPattern(filePath, pattern)) {
+                    if (testForExclusionPattern(filePath, pattern, cwd)) {
                         return true;
                     }
                 }
-            } else if (testForExclusionPattern(filePath, settings.exclude)) {
+            } else if (testForExclusionPattern(filePath, settings.exclude, cwd)) {
                 return true;
             }
         }
@@ -390,7 +395,18 @@ export class TsLintRunner {
     }
 }
 
-function testForExclusionPattern(filePath: string, pattern: string): boolean {
+function testForExclusionPattern(filePath: string, pattern: string, cwd: string | undefined): boolean {
+    if (cwd) {
+        // try first as relative
+        const relPath = relative(cwd, filePath);
+        if (minimatch(relPath, pattern, { dot: true })) {
+            return true;
+        }
+        if (relPath === filePath) {
+            return false;
+        }
+    }
+
     return minimatch(filePath, pattern, { dot: true });
 }
 
@@ -433,7 +449,7 @@ function isExcludedFromLinterOptions(
     if (config === undefined || config.linterOptions === undefined || config.linterOptions.exclude === undefined) {
         return false;
     }
-    return config.linterOptions.exclude.some(pattern => testForExclusionPattern(fileName, pattern));
+    return config.linterOptions.exclude.some(pattern => testForExclusionPattern(fileName, pattern, undefined));
 }
 
 function getConfigurationFailureMessage(err: any): string {

@@ -305,10 +305,10 @@ export class TSLintPlugin {
     }
 
     private getDiagnosticCategory(failure: tslint.RuleFailure): ts.DiagnosticCategory {
-        if (this.configurationManager.config.alwaysShowRuleFailuresAsWarnings === true) {
+        if (this.configurationManager.config.alwaysShowRuleFailuresAsWarnings || typeof this.configurationManager.config.alwaysShowRuleFailuresAsWarnings === 'undefined') {
             return this.ts.DiagnosticCategory.Warning;
-        } else if (failure.getRuleSeverity && failure.getRuleSeverity() === 'error') {
-            // tslint5 supports to assign severities to rules
+        }
+        if (failure.getRuleSeverity && failure.getRuleSeverity() === 'error') {
             return this.ts.DiagnosticCategory.Error;
         }
         return this.ts.DiagnosticCategory.Warning;

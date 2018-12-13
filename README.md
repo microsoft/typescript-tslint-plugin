@@ -31,7 +31,7 @@ See [editor support](#editor-support) for more detailed setup instructions.
  * `configFile` - The configuration file that tslint should use instead of the default tslint.json. A relative file path is resolved relative to the project root.
  * `jsEnable` - Enable/disable tslint for `.js` files, default is `false`.
  * `ignoreDefinitionFiles` - Control if TypeScript definition files should be ignored. Default is `true`
- * `alwaysShowRuleFailuresAsWarnings` - Always show rule failures as warnings, ignoring the severity configuration in the tslint.json configuration.
+ * `alwaysShowRuleFailuresAsWarnings` - Always show rule failures as warnings, ignoring the severity configuration in the tslint.json configuration. Default is `true`.
  * `suppressWhileTypeErrorsPresent` - Suppress tslint errors from being reported while other errors are present.
 
 Here is a configuration sample:

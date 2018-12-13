@@ -144,15 +144,6 @@ export class TSLintPlugin {
 
             for (const warning of result.warnings) {
                 this.logger.info(`[tslint] ${warning}`);
-                diagnostics.push({
-                    code: TSLINT_ERROR_CODE,
-                    source: TSLINT_ERROR_SOURCE,
-                    category: this.ts.DiagnosticCategory.Error,
-                    file,
-                    start: 0,
-                    length: 1,
-                    messageText: warning,
-                });
             }
 
             const tslintProblems = filterProblemsForFile(fileName, result.lintResult.failures);

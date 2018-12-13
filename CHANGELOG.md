@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0 - December 12, 2018
+- Allowing configuring `excluded` files. Thanks @vemoo!
+- Default `alwaysShowRuleFailuresAsWarnings` to true. Set `"alwaysShowRuleFailuresAsWarnings": false` to restore the old behavior.
+- Removing logic for older TS lint versions. Only TSlint5 was ever officially supported but there was still some logic for handling older tslint4.
+- Don't show error in editor if `tslint` can't be found. We still log an error in the TS Server but do not generate an editor warning.
+
 ## 0.1.2 - November 28, 2018
 - Always show a disable rule fix for TSLint errors. Thanks @reduckted!
 

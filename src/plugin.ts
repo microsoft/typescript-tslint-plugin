@@ -5,7 +5,7 @@ import { ConfigFileWatcher } from './configFileWatcher';
 import { Logger } from './logger';
 import { RunResult, TsLintRunner } from './runner';
 import { ConfigurationManager } from './settings';
-import { getNonOverlappingReplacements, filterProblemsForFile } from './runner/failures';
+import { getNonOverlappingReplacements, filterProblemsForFile, getReplacements } from './runner/failures';
 
 const isTsLintLanguageServiceMarker = Symbol('__isTsLintLanguageServiceMarker__');
 
@@ -315,23 +315,6 @@ export class TSLintPlugin {
     }
 }
 
-function getReplacements(fix: tslint.Fix | undefined): tslint.Replacement[] {
-    let replacements: tslint.Replacement[] | null = null;
-    // in tslint4 a Fix has a replacement property with the Replacements
-    if ((fix as any).replacements) {
-        // tslint4
-        replacements = (fix as any).replacements;
-    } else {
-        // in tslint 5 a Fix is a Replacement | Replacement[]
-        if (!Array.isArray(fix)) {
-            replacements = [fix as any];
-        } else {
-            replacements = fix;
-        }
-    }
-    return replacements || [];
-}
-
 function convertReplacementToTextChange(repl: tslint.Replacement): ts_module.TextChange {
     return {
         newText: repl.text,
@@ -350,11 +333,6 @@ function failureToFileTextChange(failure: tslint.RuleFailure, fileName: string):
 }
 
 function replacementsAreEmpty(fix: tslint.Fix | undefined): boolean {
-    // in tslint 4 a Fix has a replacement property witht the Replacements
-    if ((fix as any).replacements) {
-        return (fix as any).replacements.length === 0;
-    }
-    // tslint 5
     if (Array.isArray(fix)) {
         return fix.length === 0;
     }

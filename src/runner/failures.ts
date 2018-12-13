@@ -21,20 +21,13 @@ export function filterProblemsForFile(
 }
 
 export function getReplacements(fix: tslint.Fix | undefined): tslint.Replacement[] {
-    let replacements: tslint.Replacement[] | null = null;
-    // in tslint4 a Fix has a replacement property with the Replacements
-    if ((fix as any).replacements) {
-        // tslint4
-        replacements = (fix as any).replacements;
+    if (!fix) {
+        return [];
+    } else if (Array.isArray(fix)) {
+        return fix;
     } else {
-        // in tslint 5 a Fix is a Replacement | Replacement[]
-        if (!Array.isArray(fix)) {
-            replacements = [fix as any];
-        } else {
-            replacements = fix;
-        }
+        return [fix];
     }
-    return replacements || [];
 }
 
 function getReplacement(failure: tslint.RuleFailure, at: number): tslint.Replacement {

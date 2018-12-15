@@ -1,6 +1,6 @@
 {
   "name": "typescript-tslint-plugin",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "TypeScript tslint language service plugin",
   "main": "out/index.js",
   "author": "Microsoft",

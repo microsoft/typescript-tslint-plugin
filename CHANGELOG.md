@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.1 - December 14, 2018
+- Fix `ignoreDefinitionFiles` defaulting to false.
+
 ## 0.2.0 - December 12, 2018
 - Allowing configuring `excluded` files. Thanks @vemoo!
 - Default `alwaysShowRuleFailuresAsWarnings` to true. Set `"alwaysShowRuleFailuresAsWarnings": false` to restore the old behavior.

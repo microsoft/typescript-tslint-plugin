@@ -13,7 +13,7 @@ export interface RunConfiguration {
     readonly rulesDirectory?: string | string[];
     readonly configFile?: string;
     readonly ignoreDefinitionFiles: boolean;
-    readonly exclude?: string | string[];
+    readonly exclude: string[];
     readonly validateWithDefaultConfig?: boolean;
     readonly nodePath?: string;
     readonly packageManager?: 'npm' | 'yarn';
@@ -340,19 +340,7 @@ export class TsLintRunner {
         if (settings.ignoreDefinitionFiles && filePath.endsWith('.d.ts')) {
             return true;
         }
-
-        if (settings.exclude) {
-            if (Array.isArray(settings.exclude)) {
-                for (const pattern of settings.exclude) {
-                    if (testForExclusionPattern(filePath, pattern, cwd)) {
-                        return true;
-                    }
-                }
-            } else if (testForExclusionPattern(filePath, settings.exclude, cwd)) {
-                return true;
-            }
-        }
-        return false;
+        return settings.exclude.some(pattern => testForExclusionPattern(filePath, pattern, cwd));
     }
 
     private traceConfigurationFile(configuration: tslint.Configuration.IConfigurationFile | undefined) {

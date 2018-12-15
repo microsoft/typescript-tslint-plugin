@@ -126,7 +126,9 @@ export class TSLintPlugin {
                     configFile: config.configFile,
                     ignoreDefinitionFiles: config.ignoreDefinitionFiles,
                     jsEnable: config.jsEnable,
-                    exclude: config.exclude,
+                    exclude: config.exclude
+                        ? Array.isArray(config.exclude) ? config.exclude : [config.exclude]
+                        : [],
                 });
                 if (result.configFilePath) {
                     this.configFileWatcher.ensureWatching(result.configFilePath);

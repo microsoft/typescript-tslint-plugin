@@ -7,26 +7,32 @@ import { getNonOverlappingReplacements, filterProblemsForFile } from '../failure
 
 const testDataRoot = path.join(__dirname, '..', '..', '..', 'test-data');
 
+const defaultRunConfiguration: RunConfiguration = {
+    exclude: [],
+    jsEnable: false,
+    ignoreDefinitionFiles: true,
+};
+
 describe('TSLintRunner', () => {
     describe('runTsLint', () => {
         // Must come first. TS lint only reports warnings once.
         it.skip('should report warnings', () => {
             const filePath = path.join(testDataRoot, 'no-unused-variables', 'test.ts');
-            const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), {} as RunConfiguration);
+            const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), defaultRunConfiguration);
 
             expect(result.lintResult.errorCount).to.equal(0);
             expect(result.warnings.length).to.equal(2);
         });
 
         it('should not return any errors for empty file', () => {
-            const result = createTsLintRunner().runTsLint('', '', {} as RunConfiguration);
+            const result = createTsLintRunner().runTsLint('', '', defaultRunConfiguration);
             expect(result.lintResult.errorCount).to.equal(0);
         });
 
         it('should return an error for test file', () => {
             const folderPath = path.join(testDataRoot, 'with-tslint');
             const filePath = path.join(folderPath, 'test.ts');
-            const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), {} as RunConfiguration);
+            const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), defaultRunConfiguration);
 
             expect(result.lintResult.errorCount).to.equal(1);
             expect(result.lintResult.warningCount).to.equal(0);
@@ -46,8 +52,9 @@ describe('TSLintRunner', () => {
         it.skip('should not validate using if no tslint.json exists and validateWithDefaultConfig is false', () => {
             const filePath = path.join(testDataRoot, 'no-tslint', 'test.ts');
             const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), {
+                ...defaultRunConfiguration,
                 validateWithDefaultConfig: false,
-            } as RunConfiguration);
+            });
 
             expect(result.lintResult.errorCount).to.equal(0);
             expect(result.lintResult.warningCount).to.equal(0);
@@ -55,13 +62,13 @@ describe('TSLintRunner', () => {
 
         it('should use correct config for each file', () => {
             const warningFilePath = path.join(testDataRoot, 'warnings', 'test.ts');
-            const warnResult = createTsLintRunner().runTsLint(warningFilePath, fs.readFileSync(warningFilePath).toString(), {} as RunConfiguration);
+            const warnResult = createTsLintRunner().runTsLint(warningFilePath, fs.readFileSync(warningFilePath).toString(), defaultRunConfiguration);
 
             expect(warnResult.lintResult.errorCount).to.equal(0);
             expect(warnResult.lintResult.warningCount).to.equal(1);
 
             const errorFilePath = path.join(testDataRoot, 'with-tslint', 'test.ts');
-            const errorResult = createTsLintRunner().runTsLint(errorFilePath, fs.readFileSync(warningFilePath).toString(), {} as RunConfiguration);
+            const errorResult = createTsLintRunner().runTsLint(errorFilePath, fs.readFileSync(warningFilePath).toString(), defaultRunConfiguration);
 
             expect(errorResult.lintResult.errorCount).to.equal(1);
             expect(errorResult.lintResult.warningCount).to.equal(0);
@@ -70,8 +77,9 @@ describe('TSLintRunner', () => {
         it('should not return any errors for excluded file (absolute path)', () => {
             const filePath = path.join(testDataRoot, 'with-tslint', 'test.ts');
             const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), {
+                ...defaultRunConfiguration,
                 exclude: [filePath],
-            } as RunConfiguration);
+            });
 
             expect(result.lintResult.errorCount).to.equal(0);
         });
@@ -80,9 +88,10 @@ describe('TSLintRunner', () => {
             const root = path.join(testDataRoot, 'with-tslint');
             const filePath = path.join(root, 'test.ts');
             const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), {
+                ...defaultRunConfiguration,
                 workspaceFolderPath: root,
                 exclude: ['test.ts'],
-            } as RunConfiguration);
+            } );
 
             expect(result.lintResult.errorCount).to.equal(0);
         });
@@ -91,8 +100,9 @@ describe('TSLintRunner', () => {
             const workspacePath = path.join(testDataRoot, 'with-tslint');
             const filePath = path.join(workspacePath, 'test.ts');
             const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), {
+                ...defaultRunConfiguration,
                 workspaceFolderPath: workspacePath,
-            } as RunConfiguration);
+            });
 
             expect(result.lintResult.errorCount).to.equal(1);
             expect(result.lintResult.warningCount).to.equal(0);
@@ -103,8 +113,9 @@ describe('TSLintRunner', () => {
             const root = path.join(testDataRoot, 'invalid-install');
             const filePath = path.join(root, 'test.ts');
             const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), {
+                ...defaultRunConfiguration,
                 workspaceFolderPath: root,
-            } as RunConfiguration);
+            });
 
             expect(result.warnings.length).to.equal(1);
         });
@@ -112,7 +123,7 @@ describe('TSLintRunner', () => {
         it('should not return errors in js file by default', () => {
             const root = path.join(testDataRoot, 'with-tslint');
             const filePath = path.join(root, 'test.js');
-            const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), {} as RunConfiguration);
+            const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), defaultRunConfiguration);
 
             expect(result.lintResult.errorCount).to.equal(0);
         });
@@ -120,7 +131,7 @@ describe('TSLintRunner', () => {
         it('should return errors in js file if jsEnable is set', () => {
             const root = path.join(testDataRoot, 'with-tslint');
             const filePath = path.join(root, 'test.js');
-            const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), { jsEnable: true } as RunConfiguration);
+            const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), { ...defaultRunConfiguration, jsEnable: true });
 
             expect(result.lintResult.errorCount).to.equal(1);
         });
@@ -128,7 +139,7 @@ describe('TSLintRunner', () => {
         it('should not return errors in excluded file', () => {
             const root = path.join(testDataRoot, 'with-tslint');
             const filePath = path.join(root, 'excluded.ts');
-            const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), {} as RunConfiguration);
+            const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), defaultRunConfiguration);
 
             expect(result.lintResult.errorCount).to.equal(0);
         });
@@ -137,8 +148,9 @@ describe('TSLintRunner', () => {
             const root = path.join(testDataRoot, 'with-tslint');
             const filePath = path.join(root, 'test.ts');
             const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), {
+                ...defaultRunConfiguration,
                 nodePath: 'invalid',
-            } as RunConfiguration);
+            });
 
             expect(result.lintResult.errorCount).to.equal(1);
             expect(result.warnings.length).to.equal(1);
@@ -147,7 +159,7 @@ describe('TSLintRunner', () => {
         it('should ignore no-unused-varaible rule', () => {
             const root = path.join(testDataRoot, 'with-tslint');
             const filePath = path.join(root, 'unused-variable.ts');
-            const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), { } as RunConfiguration);
+            const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), defaultRunConfiguration);
 
             expect(result.lintResult.errorCount).to.equal(0);
             expect(result.warnings.length).to.equal(0);
@@ -158,7 +170,7 @@ describe('TSLintRunner', () => {
         it('should filter out all problems not in file', () => {
             const runner = createTsLintRunner();
             const filePath = path.join(testDataRoot, 'with-tslint', 'test.ts');
-            const result = runner.runTsLint(filePath, fs.readFileSync(filePath).toString(), {} as RunConfiguration);
+            const result = runner.runTsLint(filePath, fs.readFileSync(filePath).toString(), defaultRunConfiguration);
 
             expect(result.lintResult.failures.length).to.equal(1);
 
@@ -171,7 +183,7 @@ describe('TSLintRunner', () => {
         it('should filter out overlapping replacements', () => {
             const runner = createTsLintRunner();
             const filePath = path.join(testDataRoot, 'overlapping-errors', 'test.ts');
-            const result = runner.runTsLint(filePath, fs.readFileSync(filePath).toString(), {} as RunConfiguration);
+            const result = runner.runTsLint(filePath, fs.readFileSync(filePath).toString(), defaultRunConfiguration);
 
             expect(result.lintResult.failures.length).to.equal(2);
 

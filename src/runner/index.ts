@@ -9,10 +9,10 @@ import * as server from 'vscode-languageserver';
 import { MruCache } from './mruCache';
 
 export interface RunConfiguration {
-    readonly jsEnable?: boolean;
+    readonly jsEnable: boolean;
     readonly rulesDirectory?: string | string[];
     readonly configFile?: string;
-    readonly ignoreDefinitionFiles?: boolean;
+    readonly ignoreDefinitionFiles: boolean;
     readonly exclude?: string | string[];
     readonly validateWithDefaultConfig?: boolean;
     readonly nodePath?: string;
@@ -201,7 +201,7 @@ export class TsLintRunner {
     private doRun(
         filePath: string,
         contents: string | typescript.Program,
-        library: typeof import ('tslint'),
+        library: typeof import('tslint'),
         configuration: RunConfiguration,
         warnings: string[],
     ): RunResult {
@@ -337,10 +337,8 @@ export class TsLintRunner {
     }
 
     private fileIsExcluded(settings: RunConfiguration, filePath: string, cwd: string | undefined): boolean {
-        if (settings.ignoreDefinitionFiles) {
-            if (filePath.endsWith('.d.ts')) {
-                return true;
-            }
+        if (settings.ignoreDefinitionFiles && filePath.endsWith('.d.ts')) {
+            return true;
         }
 
         if (settings.exclude) {

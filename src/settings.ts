@@ -7,15 +7,22 @@ import { pluginId } from './config';
  * Settings for the plugin section in tsconfig.json
  */
 export interface Configuration {
-    readonly alwaysShowRuleFailuresAsWarnings?: boolean;
-    readonly ignoreDefinitionFiles?: boolean;
+    readonly alwaysShowRuleFailuresAsWarnings: boolean;
+    readonly ignoreDefinitionFiles: boolean;
     readonly configFile?: string;
-    readonly suppressWhileTypeErrorsPresent?: boolean;
-    readonly jsEnable?: boolean;
+    readonly suppressWhileTypeErrorsPresent: boolean;
+    readonly jsEnable: boolean;
     readonly exclude?: string | string[];
 }
 
 export class ConfigurationManager {
+
+    private static readonly defaultConfig: Configuration = {
+        alwaysShowRuleFailuresAsWarnings: true,
+        ignoreDefinitionFiles: true,
+        jsEnable: false,
+        suppressWhileTypeErrorsPresent: false
+    };
 
     private readonly _configUpdatedListeners = new Set<() => void>();
 
@@ -23,7 +30,7 @@ export class ConfigurationManager {
     private _watcher?: ts_module.FileWatcher;
 
     public get config(): Configuration { return this._configuration; }
-    private _configuration: Configuration = {};
+    private _configuration: Configuration = ConfigurationManager.defaultConfig;
 
     public constructor(
         private readonly _ts: typeof ts_module
@@ -35,6 +42,7 @@ export class ConfigurationManager {
             : config.configFile;
 
         this._configuration = {
+            ...ConfigurationManager.defaultConfig,
             ...config,
             configFile,
         };

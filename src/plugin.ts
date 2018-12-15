@@ -116,7 +116,7 @@ export class TSLintPlugin {
                 this.codeFixActions.delete(fileName);
             }
 
-            if (config.ignoreDefinitionFiles === true && fileName.endsWith('.d.ts')) {
+            if (config.ignoreDefinitionFiles && fileName.endsWith('.d.ts')) {
                 return diagnostics;
             }
 

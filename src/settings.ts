@@ -21,7 +21,7 @@ export class ConfigurationManager {
         alwaysShowRuleFailuresAsWarnings: true,
         ignoreDefinitionFiles: true,
         jsEnable: false,
-        suppressWhileTypeErrorsPresent: false
+        suppressWhileTypeErrorsPresent: false,
     };
 
     private readonly _configUpdatedListeners = new Set<() => void>();

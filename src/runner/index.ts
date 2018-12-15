@@ -201,7 +201,7 @@ export class TsLintRunner {
     private doRun(
         filePath: string,
         contents: string | typescript.Program,
-        library: typeof import('tslint'),
+        library: typeof import ('tslint'),
         configuration: RunConfiguration,
         warnings: string[],
     ): RunResult {

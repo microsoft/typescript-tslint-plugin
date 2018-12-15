@@ -48,8 +48,7 @@ describe('TSLintRunner', () => {
             expect(result.configFilePath).to.equal(path.join(folderPath, 'tslint.json'));
         });
 
-        // TODO: this picks up the root tslint.json
-        it.skip('should not validate using if no tslint.json exists and validateWithDefaultConfig is false', () => {
+        it('should not validate using if no tslint.json exists and validateWithDefaultConfig is false', () => {
             const filePath = path.join(testDataRoot, 'no-tslint', 'test.ts');
             const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), {
                 ...defaultRunConfiguration,

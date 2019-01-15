@@ -37,7 +37,6 @@ export = function init({ typescript }: { typescript: typeof ts_module }) {
 };
 
 function isValidTypeScriptVersion(typescript: typeof ts_module): boolean {
-    const servicesVersion = typescript.servicesVersion;
-    const [major, minor] = servicesVersion.split('.');
-    return (+major === 0 && +minor >= 8);
+    const [major] = typescript.version.split('.');
+    return +major >= 3;
 }

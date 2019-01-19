@@ -218,7 +218,7 @@ export class TSLintPlugin {
     private getRuleFailureQuickFix(failure: tslint.RuleFailure, fileName: string): ts_module.CodeFixAction {
         return {
             description: `Fix: ${failure.getFailure()}`,
-            fixName: '',
+            fixName: `tslint:${failure.getRuleName()}`,
             changes: [failureToFileTextChange(failure, fileName)],
         };
     }
@@ -244,7 +244,7 @@ export class TSLintPlugin {
 
         return {
             description: `Fix all '${ruleName}'`,
-            fixName: '',
+            fixName: `tslint:fix-all:${ruleName}`,
             changes,
         };
     }
@@ -252,7 +252,7 @@ export class TSLintPlugin {
     private getDisableRuleQuickFix(failure: tslint.RuleFailure, fileName: string, file: ts_module.SourceFile): ts_module.CodeFixAction {
         return {
             description: `Disable rule '${failure.getRuleName()}'`,
-            fixName: '',
+            fixName: `tslint:disable:${failure.getRuleName()}`,
             changes: [{
                 fileName,
                 textChanges: [{
@@ -267,7 +267,7 @@ export class TSLintPlugin {
         const allReplacements = getNonOverlappingReplacements(Array.from(documentFixes.values()).filter(x => x.fixable).map(x => x.failure));
         return {
             description: `Fix all auto-fixable tslint failures`,
-            fixName: '',
+            fixName: `tslint:fix-all`,
             changes: [{
                 fileName,
                 textChanges: allReplacements.map(convertReplacementToTextChange),

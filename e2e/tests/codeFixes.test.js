@@ -47,7 +47,7 @@ describe('CodeFixes', () => {
         assert.isTrue(errorResponse.success);
         assert.deepEqual(errorResponse.body, [
             {
-                "fixName": "",
+                "fixName": "tslint:array-type",
                 "description": "Fix: Array type using 'Array<T>' is forbidden for simple types. Use 'T[]' instead.",
                 "changes": [
                     {
@@ -80,7 +80,7 @@ describe('CodeFixes', () => {
                 ]
             },
             {
-                "fixName": "",
+                "fixName": "tslint:fix-all",
                 "description": "Fix all auto-fixable tslint failures",
                 "changes": [
                     {
@@ -113,7 +113,7 @@ describe('CodeFixes', () => {
                 ]
             },
             {
-                "fixName": "",
+                "fixName": "tslint:disable:array-type",
                 "description": "Disable rule 'array-type'",
                 "changes": [
                     {
@@ -137,7 +137,7 @@ describe('CodeFixes', () => {
         ]);
     });
 
-    it('should return individual fixes and fix all for multuple errors of same type in file', async () => {
+    it('should return individual fixes and fix all for multiple errors of same type in file', async () => {
         const errorResponse = await getCodeFixes(
             `let x: Array<string> = new Array<string>(); console.log(x);\nlet y: Array<string> = new Array<string>(); console.log(y);`, {
                 startLine: 1,
@@ -151,7 +151,7 @@ describe('CodeFixes', () => {
 
         assert.deepEqual(errorResponse.body, [
             {
-                "fixName": "",
+                "fixName": "tslint:array-type",
                 "description": "Fix: Array type using 'Array<T>' is forbidden for simple types. Use 'T[]' instead.",
                 "changes": [
                     {
@@ -185,7 +185,7 @@ describe('CodeFixes', () => {
             },
             {
                 "description": "Fix all 'array-type'",
-                "fixName": "",
+                "fixName": "tslint:fix-all:array-type",
                 "changes": [
                     {
                         "fileName": mockFileName,
@@ -244,7 +244,7 @@ describe('CodeFixes', () => {
                 ]
             },
             {
-                "fixName": "",
+                "fixName": "tslint:fix-all",
                 "description": "Fix all auto-fixable tslint failures",
                 "changes": [
                     {
@@ -299,7 +299,7 @@ describe('CodeFixes', () => {
                 ]
             },
             {
-                "fixName": "",
+                "fixName": "tslint:disable:array-type",
                 "description": "Disable rule 'array-type'",
                 "changes": [
                     {

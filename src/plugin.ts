@@ -71,7 +71,7 @@ export class TSLintPlugin {
         const oldGetSupportedCodeFixes = this.ts.getSupportedCodeFixes.bind(this.ts);
         this.ts.getSupportedCodeFixes = (): string[] => {
             return [
-                ... oldGetSupportedCodeFixes(),
+                ...oldGetSupportedCodeFixes(),
                 '' + TSLINT_ERROR_CODE,
             ];
         };
@@ -181,21 +181,20 @@ export class TSLintPlugin {
         const documentFixes = this.codeFixActions.get(fileName);
         if (documentFixes) {
             const problem = documentFixes.get(start, end);
-            if (problem && problem.fixable) {
-                const fix = problem.failure.getFix();
-                if (fix) {
-                    fixes.push(this.getRuleFailureQuickFix(problem.failure, fileName));
+            if (problem) {
+                if (problem.fixable) {
+                    const fix = problem.failure.getFix();
+                    if (fix) {
+                        fixes.push(this.getRuleFailureQuickFix(problem.failure, fileName));
 
-                    const fixAll = this.getRuleFailureFixAllQuickFix(problem.failure.getRuleName(), documentFixes, fileName);
-                    if (fixAll) {
-                        fixes.push(fixAll);
+                        const fixAll = this.getRuleFailureFixAllQuickFix(problem.failure.getRuleName(), documentFixes, fileName);
+                        if (fixAll) {
+                            fixes.push(fixAll);
+                        }
                     }
                 }
-            }
 
-            fixes.push(this.getFixAllAutoFixableQuickFix(documentFixes, fileName));
-
-            if (problem) {
+                fixes.push(this.getFixAllAutoFixableQuickFix(documentFixes, fileName));
                 fixes.push(this.getDisableRuleQuickFix(problem.failure, fileName, this.getProgram().getSourceFile(fileName)!));
             }
         }

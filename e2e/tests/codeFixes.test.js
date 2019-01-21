@@ -322,4 +322,17 @@ describe('CodeFixes', () => {
             }
         ]);
     });
+
+    it('should not return ts-lint fixes on non-tslint errors', async () => {
+        const errorResponse = await getCodeFixes(
+            `const a = 1; a = 2`, {
+                startLine: 1,
+                startOffset: 13,
+                endLine: 1,
+                endOffset: 14,
+            });
+
+        assert.isTrue(errorResponse.success);
+        assert.deepEqual(errorResponse.body, []);
+    });
 });

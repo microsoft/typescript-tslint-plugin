@@ -5,22 +5,28 @@ const path = require('path');
 const createServer = require('../server-fixture');
 const { openMockFile, getFirstResponseOfType } = require('./helpers');
 
-const tslintSource = 'tslint';
 
 const mockFileName = path.join(__dirname, '..', 'project-fixture', 'main.ts').replace(/\\/g, '/');
 
 /**
  * @param {string} fileContents 
- * @param {{ startLine: number, startOffset: number, endLine: number, endOffset: number }} data
  */
-const getCodeFixes = (fileContents, data) => {
+function createServerForFile(fileContents) {
     const server = createServer();
     openMockFile(server, mockFileName, fileContents);
+    return server;
+}
+
+/**
+ * @param {*} server 
+ * @param {{ startLine: number, startOffset: number, endLine: number, endOffset: number }} data
+ */
+const getCodeFixes = async (server, data) => {
 
     // Generate diagnostics 
     server.sendCommand('semanticDiagnosticsSync', { file: mockFileName });
 
-    server.sendCommand('getCodeFixes', {
+    return server.sendCommand('getCodeFixes', {
         file: mockFileName,
         startLine: data.startLine,
         startOffset: data.startOffset,
@@ -28,24 +34,43 @@ const getCodeFixes = (fileContents, data) => {
         endOffset: data.endOffset,
         errorCodes: [1]
     });
+};
 
-    return server.close().then(_ => {
-        return getFirstResponseOfType('getCodeFixes', server);
+const getCombinedCodeFixes = (server, fixId) => {
+    return server.sendCommand('getCombinedCodeFix', {
+        scope: {
+            type: 'file',
+            args: { file: mockFileName }
+        },
+        fixId: fixId,
     });
-}
+};
 
 describe('CodeFixes', () => {
-    it('should return fix and disables for single error', async () => {
-        const errorResponse = await getCodeFixes(
-            `let t: Array<string> = new Array<string>(); console.log(t);`, {
-                startLine: 1,
-                startOffset: 8,
-                endLine: 1,
-                endOffset: 21,
-            });
+    let server = undefined;
 
-        assert.isTrue(errorResponse.success);
-        assert.deepEqual(errorResponse.body, [
+    after(() => {
+        if (server) {
+            server.close();
+            server = undefined;
+        }
+    })
+
+    it('should return fix and disables for single error', async () => {
+        server = createServerForFile(
+            `let t: Array<string> = new Array<string>(); console.log(t);`
+        );
+        await getCodeFixes(server, {
+            startLine: 1,
+            startOffset: 8,
+            endLine: 1,
+            endOffset: 21,
+        });
+        await server.close();
+        const codeFixesResponse = await getFirstResponseOfType('getCodeFixes', server);
+
+        assert.isTrue(codeFixesResponse.success);
+        assert.deepEqual(codeFixesResponse.body, [
             {
                 "fixName": "tslint:array-type",
                 "description": "Fix: Array type using 'Array<T>' is forbidden for simple types. Use 'T[]' instead.",
@@ -138,21 +163,31 @@ describe('CodeFixes', () => {
     });
 
     it('should return individual fixes and fix all for multiple errors of same type in file', async () => {
-        const errorResponse = await getCodeFixes(
-            `let x: Array<string> = new Array<string>(); console.log(x);\nlet y: Array<string> = new Array<string>(); console.log(y);`, {
-                startLine: 1,
-                startOffset: 8,
-                endLine: 1,
-                endOffset: 21,
-            });
+        server = createServerForFile(
+            `let x: Array<string> = new Array<string>(); console.log(x);\nlet y: Array<string> = new Array<string>(); console.log(y);`,
+        );
+        await getCodeFixes(server, {
+            startLine: 1,
+            startOffset: 8,
+            endLine: 1,
+            endOffset: 21,
+        });
+        await getCombinedCodeFixes(server, 'tslint:array-type');
 
-        assert.isTrue(errorResponse.success);
-        assert.strictEqual(errorResponse.body.length, 4);
+        await server.close();
 
-        assert.deepEqual(errorResponse.body, [
+        const codeFixesResponse = await getFirstResponseOfType('getCodeFixes', server);
+        const combinedFixesResponse = await getFirstResponseOfType('getCombinedCodeFix', server);
+
+        assert.isTrue(codeFixesResponse.success);
+        assert.strictEqual(codeFixesResponse.body.length, 3);
+
+        assert.deepEqual(codeFixesResponse.body, [
             {
                 "fixName": "tslint:array-type",
                 "description": "Fix: Array type using 'Array<T>' is forbidden for simple types. Use 'T[]' instead.",
+                "fixAllDescription": "Fix all 'array-type'",
+                "fixId": "tslint:array-type",
                 "changes": [
                     {
                         "fileName": mockFileName,
@@ -175,66 +210,6 @@ describe('CodeFixes', () => {
                                 },
                                 "end": {
                                     "line": 1,
-                                    "offset": 21
-                                },
-                                "newText": "[]"
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                "description": "Fix all 'array-type'",
-                "fixName": "tslint:fix-all:array-type",
-                "changes": [
-                    {
-                        "fileName": mockFileName,
-                        "textChanges": [
-                            {
-                                "start": {
-                                    "line": 1,
-                                    "offset": 8
-                                },
-                                "end": {
-                                    "line": 1,
-                                    "offset": 14
-                                },
-                                "newText": ""
-                            },
-                            {
-                                "start": {
-                                    "line": 1,
-                                    "offset": 20
-                                },
-                                "end": {
-                                    "line": 1,
-                                    "offset": 21
-                                },
-                                "newText": "[]"
-                            }
-                        ]
-                    },
-                    {
-                        "fileName": mockFileName,
-                        "textChanges": [
-                            {
-                                "start": {
-                                    "line": 2,
-                                    "offset": 8
-                                },
-                                "end": {
-                                    "line": 2,
-                                    "offset": 14
-                                },
-                                "newText": ""
-                            },
-                            {
-                                "start": {
-                                    "line": 2,
-                                    "offset": 20
-                                },
-                                "end": {
-                                    "line": 2,
                                     "offset": 21
                                 },
                                 "newText": "[]"
@@ -321,18 +296,82 @@ describe('CodeFixes', () => {
                 ]
             }
         ]);
+
+        assert.isTrue(combinedFixesResponse.success);
+        assert.deepEqual(combinedFixesResponse.body, {
+            "changes": [
+                {
+                    "fileName": mockFileName,
+                    "textChanges": [
+                        {
+                            "start": {
+                                "line": 1,
+                                "offset": 8
+                            },
+                            "end": {
+                                "line": 1,
+                                "offset": 14
+                            },
+                            "newText": ""
+                        },
+                        {
+                            "start": {
+                                "line": 1,
+                                "offset": 20
+                            },
+                            "end": {
+                                "line": 1,
+                                "offset": 21
+                            },
+                            "newText": "[]"
+                        }
+                    ]
+                },
+                {
+                    "fileName": mockFileName,
+                    "textChanges": [
+                        {
+                            "start": {
+                                "line": 2,
+                                "offset": 8
+                            },
+                            "end": {
+                                "line": 2,
+                                "offset": 14
+                            },
+                            "newText": ""
+                        },
+                        {
+                            "start": {
+                                "line": 2,
+                                "offset": 20
+                            },
+                            "end": {
+                                "line": 2,
+                                "offset": 21
+                            },
+                            "newText": "[]"
+                        }
+                    ]
+                }
+            ]
+        });
     });
 
     it('should not return ts-lint fixes on non-tslint errors', async () => {
-        const errorResponse = await getCodeFixes(
-            `const a = 1; a = 2`, {
-                startLine: 1,
-                startOffset: 13,
-                endLine: 1,
-                endOffset: 14,
-            });
+        server = createServerForFile(
+            `const a = 1; a = 2`
+        );
+        await getCodeFixes(server, {
+            startLine: 1,
+            startOffset: 13,
+            endLine: 1,
+            endOffset: 14,
+        });
+        await server.close();
+        const codeFixesResponse = await getFirstResponseOfType('getCodeFixes', server);
 
-        assert.isTrue(errorResponse.success);
-        assert.deepEqual(errorResponse.body, []);
+        assert.isTrue(codeFixesResponse.success);
+        assert.deepEqual(codeFixesResponse.body, []);
     });
 });

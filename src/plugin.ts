@@ -14,6 +14,19 @@ interface Problem {
     fixable: boolean;
 }
 
+class TsLintFixId {
+    public static fromFailure(failure: tslint.RuleFailure) {
+        return `tslint:${failure.getRuleName()}`;
+    }
+
+    public static toRuleName(fixId: {}): undefined | string {
+        if (typeof fixId !== 'string' || !fixId.startsWith('tslint:')) {
+            return undefined;
+        }
+        return fixId.replace(/^tslint:/, '');
+    }
+}
+
 class ProblemMap {
     private readonly _map = new Map<string, Problem>();
 
@@ -86,6 +99,11 @@ export class TSLintPlugin {
         const oldGetCodeFixesAtPosition = languageService.getCodeFixesAtPosition.bind(languageService);
         intercept.getCodeFixesAtPosition = (fileName: string, start: number, end: number, errorCodes: number[], formatOptions: ts.FormatCodeSettings, userPreferences: ts.UserPreferences): ReadonlyArray<ts.CodeFixAction> => {
             return this.getCodeFixesAtPosition(oldGetCodeFixesAtPosition, fileName, start, end, errorCodes, formatOptions, userPreferences);
+        };
+
+        const oldGetCombinedCodeFix = languageService.getCombinedCodeFix.bind(languageService);
+        intercept.getCombinedCodeFix = (...args): ts_module.CombinedCodeActions => {
+            return this.getCombinedCodeFix(oldGetCombinedCodeFix, ...args);
         };
 
         return new Proxy(languageService, {
@@ -177,6 +195,7 @@ export class TSLintPlugin {
         }
 
         this.logger.info(`getCodeFixes ${errorCodes[0]}`);
+        this.logger.info(JSON.stringify(fixes))
 
         const documentFixes = this.codeFixActions.get(fileName);
         if (documentFixes) {
@@ -185,11 +204,13 @@ export class TSLintPlugin {
                 if (problem.fixable) {
                     const fix = problem.failure.getFix();
                     if (fix) {
-                        fixes.push(this.getRuleFailureQuickFix(problem.failure, fileName));
+                        const codeFixAction = this.getRuleFailureQuickFix(problem.failure, fileName);
+                        fixes.push(codeFixAction);
 
                         const fixAll = this.getRuleFailureFixAllQuickFix(problem.failure.getRuleName(), documentFixes, fileName);
                         if (fixAll) {
-                            fixes.push(fixAll);
+                            codeFixAction.fixId = TsLintFixId.fromFailure(problem.failure);
+                            codeFixAction.fixAllDescription = `Fix all '${problem.failure.getRuleName()}'`;
                         }
                     }
                 }
@@ -200,6 +221,32 @@ export class TSLintPlugin {
         }
 
         return fixes;
+    }
+
+    private getCombinedCodeFix(
+        delegate: ts.LanguageService['getCombinedCodeFix'],
+        scope: ts_module.CombinedCodeFixScope,
+        fixId: {},
+        formatOptions: ts_module.FormatCodeSettings,
+        preferences: ts_module.UserPreferences
+    ): ts_module.CombinedCodeActions {
+        const ruleName = TsLintFixId.toRuleName(fixId);
+        if (!ruleName) {
+            return delegate(scope, fixId, formatOptions, preferences);
+        }
+
+        const documentFixes = this.codeFixActions.get(scope.fileName);
+        if (documentFixes) {
+            const fixAll = this.getRuleFailureFixAllQuickFix(ruleName, documentFixes, scope.fileName);
+            if (fixAll) {
+                return {
+                    changes: fixAll.changes,
+                    commands: fixAll.commands
+                };
+            }
+        }
+
+        return { changes: [] };
     }
 
     private recordCodeAction(failure: tslint.RuleFailure, file: ts.SourceFile) {
@@ -218,7 +265,7 @@ export class TSLintPlugin {
         return {
             description: `Fix: ${failure.getFailure()}`,
             fixName: `tslint:${failure.getRuleName()}`,
-            changes: [failureToFileTextChange(failure, fileName)],
+            changes: [failureToFileTextChange(failure, fileName)]
         };
     }
 

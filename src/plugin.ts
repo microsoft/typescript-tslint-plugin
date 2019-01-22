@@ -92,13 +92,13 @@ export class TSLintPlugin {
         const intercept: Partial<ts.LanguageService> = Object.create(null);
 
         const oldGetSemanticDiagnostics = languageService.getSemanticDiagnostics.bind(languageService);
-        intercept.getSemanticDiagnostics = (fileName: string) => {
-            return this.getSemanticDiagnostics(oldGetSemanticDiagnostics, fileName);
+        intercept.getSemanticDiagnostics = (...args) => {
+            return this.getSemanticDiagnostics(oldGetSemanticDiagnostics, ...args);
         };
 
         const oldGetCodeFixesAtPosition = languageService.getCodeFixesAtPosition.bind(languageService);
-        intercept.getCodeFixesAtPosition = (fileName: string, start: number, end: number, errorCodes: number[], formatOptions: ts.FormatCodeSettings, userPreferences: ts.UserPreferences): ReadonlyArray<ts.CodeFixAction> => {
-            return this.getCodeFixesAtPosition(oldGetCodeFixesAtPosition, fileName, start, end, errorCodes, formatOptions, userPreferences);
+        intercept.getCodeFixesAtPosition = (...args): ReadonlyArray<ts.CodeFixAction> => {
+            return this.getCodeFixesAtPosition(oldGetCodeFixesAtPosition, ...args);
         };
 
         const oldGetCombinedCodeFix = languageService.getCombinedCodeFix.bind(languageService);
@@ -184,7 +184,7 @@ export class TSLintPlugin {
         fileName: string,
         start: number,
         end: number,
-        errorCodes: number[],
+        errorCodes: ReadonlyArray<number>,
         formatOptions: ts.FormatCodeSettings,
         userPreferences: ts.UserPreferences
     ): ReadonlyArray<ts.CodeFixAction> {

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0 - January 21, 2018
+- Set `fixName` on returned actions. Thanks @kondi!
+- Fix TS Lint's fix all quick fix showing up on non-tslint errors.
+- Use `getCombinedQuickFixes` to compute 'fix all of X' errors. 
+
 ## 0.2.1 - December 14, 2018
 - Fix `ignoreDefinitionFiles` defaulting to false.
 

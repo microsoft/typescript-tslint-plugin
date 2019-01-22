@@ -195,7 +195,7 @@ export class TSLintPlugin {
         }
 
         this.logger.info(`getCodeFixes ${errorCodes[0]}`);
-        this.logger.info(JSON.stringify(fixes))
+        this.logger.info(JSON.stringify(fixes));
 
         const documentFixes = this.codeFixActions.get(fileName);
         if (documentFixes) {
@@ -241,7 +241,7 @@ export class TSLintPlugin {
             if (fixAll) {
                 return {
                     changes: fixAll.changes,
-                    commands: fixAll.commands
+                    commands: fixAll.commands,
                 };
             }
         }
@@ -265,7 +265,7 @@ export class TSLintPlugin {
         return {
             description: `Fix: ${failure.getFailure()}`,
             fixName: `tslint:${failure.getRuleName()}`,
-            changes: [failureToFileTextChange(failure, fileName)]
+            changes: [failureToFileTextChange(failure, fileName)],
         };
     }
 

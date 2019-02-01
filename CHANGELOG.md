@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.1 - January 31, 2018
+- Fix the `fix-all` action show up even on non-autofixable errors.
+
 ## 0.3.0 - January 21, 2018
 - Set `fixName` on returned actions. Thanks @kondi!
 - Fix TS Lint's fix all quick fix showing up on non-tslint errors.

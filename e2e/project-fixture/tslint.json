@@ -4,6 +4,7 @@
             true,
             "array-simple"
         ],
+        "no-unused-expression": true,
         "arrow-parens": true,
         "no-var-keyword": true,
         "no-unused-variable": [

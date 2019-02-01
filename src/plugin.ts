@@ -212,10 +212,11 @@ export class TSLintPlugin {
                             codeFixAction.fixId = TsLintFixId.fromFailure(problem.failure);
                             codeFixAction.fixAllDescription = `Fix all '${problem.failure.getRuleName()}'`;
                         }
+
+                        fixes.push(this.getFixAllAutoFixableQuickFix(documentFixes, fileName));
                     }
                 }
 
-                fixes.push(this.getFixAllAutoFixableQuickFix(documentFixes, fileName));
                 fixes.push(this.getDisableRuleQuickFix(problem.failure, fileName, this.getProgram().getSourceFile(fileName)!));
             }
         }

@@ -19,7 +19,7 @@ function createServerForFile(fileContents) {
 
 /**
  * @param {*} server 
- * @param {{ startLine: number, startOffset: number, endLine: number, endOffset: number }} data
+ * @param {{ startLine: number, startOffset: number, endLine: number, endOffset: number, additionalErrorCodes?: number[] }} data
  */
 const getCodeFixes = async (server, data) => {
 
@@ -32,7 +32,7 @@ const getCodeFixes = async (server, data) => {
         startOffset: data.startOffset,
         endLine: data.endLine,
         endOffset: data.endOffset,
-        errorCodes: [1]
+        errorCodes: [1, ...(data.additionalErrorCodes || [])]
     });
 };
 
@@ -373,5 +373,25 @@ describe('CodeFixes', () => {
 
         assert.isTrue(codeFixesResponse.success);
         assert.deepEqual(codeFixesResponse.body, []);
+    });
+
+    it('should not return TS Lint fix-all for non-fixable errors', async () => {
+        server = createServerForFile(
+            `const foo = 123; food`
+        );
+        await getCodeFixes(server, {
+            startLine: 1,
+            startOffset: 18,
+            endLine: 1,
+            endOffset: 22,
+            additionalErrorCodes: [2552]
+        });
+        await server.close();
+        const codeFixesResponse = await getFirstResponseOfType('getCodeFixes', server);
+
+        assert.isTrue(codeFixesResponse.success);
+        assert.deepEqual(codeFixesResponse.body.length, 2);
+        assert.deepEqual(codeFixesResponse.body[0].fixName, 'spelling');
+        assert.deepEqual(codeFixesResponse.body[1].fixName, 'tslint:disable:no-unused-expression');
     });
 });

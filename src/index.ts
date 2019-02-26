@@ -20,7 +20,7 @@ export = function init({ typescript }: { typescript: typeof ts_module }) {
             configManager.updateFromPluginConfig(info.config);
 
             if (!isValidTypeScriptVersion(typescript)) {
-                logger.info('Invalid typescript version detected. The TSLint plugin requires a version of TS with a services version between 0.8 and 1.0');
+                logger.info('Invalid typescript version detected. The TSLint plugin requires TypeScript 3.x');
                 return info.languageService;
             }
 

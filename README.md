@@ -229,5 +229,4 @@ To debug the plugin press `F5`. The `dev` workspace has a launch configuration t
 
 This project was forked from  https://github.com/angelozerr/tslint-language-service which itself is based on https://github.com/Microsoft/vscode-tslint/
 
-
 [tslint]: https://github.com/palantir/tslint

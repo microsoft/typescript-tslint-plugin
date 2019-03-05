@@ -15,6 +15,11 @@ matrix:
     - os: mac
     - os: windows
 
+before_install:
+  - yarn config delete proxy
+  - npm config rm proxy
+  - npm config rm https-proxy
+  
 install:
   - npm install 
   - (cd e2e ; npm install)

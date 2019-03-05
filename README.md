@@ -34,6 +34,7 @@ See [editor support](#editor-support) for more detailed setup instructions.
  * `alwaysShowRuleFailuresAsWarnings` - Always show rule failures as warnings, ignoring the severity configuration in the tslint.json configuration. Default is `true`.
  * `suppressWhileTypeErrorsPresent` - Suppress tslint errors from being reported while other errors are present.
  * `exclude` - List of files to exclude from tslint.
+ * `mockTypeScriptVersion` - Force tslint to use the same version of TypeScript as this plugin. This will affect other plugins that require the typescript package.
  
 Here is a configuration sample:
 
@@ -227,6 +228,5 @@ To debug the plugin press `F5`. The `dev` workspace has a launch configuration t
 # Credits
 
 This project was forked from  https://github.com/angelozerr/tslint-language-service which itself is based on https://github.com/Microsoft/vscode-tslint/
-
 
 [tslint]: https://github.com/palantir/tslint

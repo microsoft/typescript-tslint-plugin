@@ -34,7 +34,6 @@ See [editor support](#editor-support) for more detailed setup instructions.
  * `alwaysShowRuleFailuresAsWarnings` - Always show rule failures as warnings, ignoring the severity configuration in the tslint.json configuration. Default is `true`.
  * `suppressWhileTypeErrorsPresent` - Suppress tslint errors from being reported while other errors are present.
  * `exclude` - List of files to exclude from tslint.
-	
  
 Here is a configuration sample:
 

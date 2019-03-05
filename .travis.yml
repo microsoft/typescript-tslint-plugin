@@ -15,6 +15,9 @@ matrix:
     - os: mac
     - os: windows
 
+env:
+  - YARN_GPG=no
+  
 install:
   - npm install 
   - (cd e2e ; npm install)

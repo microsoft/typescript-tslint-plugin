@@ -6,6 +6,7 @@ language: node_js
 
 node_js:
   - '9'
+  - lts/*
 
 sudo: false
 
@@ -14,7 +15,9 @@ matrix:
     - os: linux
     - os: mac
     - os: windows
-
+env:
+  - YARN_GPG=no
+  
 install:
   - npm install 
   - (cd e2e ; npm install)

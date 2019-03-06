@@ -182,6 +182,17 @@ Then add a `plugins` section to your [`tsconfig.json`](http://www.typescriptlang
 
 Then reload your project to make sure the plugin has been loaded properly. Note that `jsconfig.json` projects are currently not supported in Visual Studio.
 
+### With vim and neovim
+
+Use [coc-tslint-plugin](https://github.com/neoclide/coc-tslint-plugin) as extenison of [coc.nvim](https://github.com/neoclide/coc.nvim).
+
+Run command in your vim after coc.nvim installed:
+
+```
+:CocInstall coc-tsserver coc-tslint-plugin
+```
+
+Run command `:CocConfig` to open configuration file.
 
 # Contributing
 To build the typescript-tslint-plugin, you'll need [Git](https://git-scm.com/downloads) and [Node.js](https://nodejs.org/).
@@ -228,5 +239,7 @@ To debug the plugin press `F5`. The `dev` workspace has a launch configuration t
 # Credits
 
 This project was forked from  https://github.com/angelozerr/tslint-language-service which itself is based on https://github.com/Microsoft/vscode-tslint/
+
+
 
 [tslint]: https://github.com/palantir/tslint

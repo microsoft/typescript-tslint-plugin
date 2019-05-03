@@ -46,8 +46,7 @@ Here is a configuration sample:
         "alwaysShowRuleFailuresAsWarnings": false,
         "ignoreDefinitionFiles": true,
         "configFile": "../tslint.json",
-        "suppressWhileTypeErrorsPresent": false,
-        "mockTypeScriptVersion": false
+        "suppressWhileTypeErrorsPresent": false
       }
     ]
   }

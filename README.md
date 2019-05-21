@@ -182,7 +182,7 @@ Then reload your project to make sure the plugin has been loaded properly. Note 
 
 ### With vim and neovim
 
-Use [coc-tslint-plugin](https://github.com/neoclide/coc-tslint-plugin) as extenison of [coc.nvim](https://github.com/neoclide/coc.nvim).
+Use [coc-tslint-plugin](https://github.com/neoclide/coc-tslint-plugin) as extension of [coc.nvim](https://github.com/neoclide/coc.nvim).
 
 Run command in your vim after coc.nvim installed:
 

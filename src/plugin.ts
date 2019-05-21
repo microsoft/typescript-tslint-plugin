@@ -107,11 +107,11 @@ export class TSLintPlugin {
         };
 
         return new Proxy(languageService, {
-            get: (target: any, property: string | symbol) => {
+            get: (target: any, property: keyof ts.LanguageService & typeof isTsLintLanguageServiceMarker) => {
                 if (property === isTsLintLanguageServiceMarker) {
                     return true;
                 }
-                return (intercept as any)[property] || target[property];
+                return intercept[property] || target[property];
             },
         });
     }

@@ -1,9 +1,12 @@
 # Changelog
 
-## 0.3.1 - January 31, 2018
+## 0.4.0 - May 21, 2010
+- Try to help users better understand why tslint is not enabled by generating warnings if there is a `tslint.json` and the tslint library cannot be found or generates an error.
+
+## 0.3.1 - January 31, 2019
 - Fix the `fix-all` action show up even on non-autofixable errors.
 
-## 0.3.0 - January 21, 2018
+## 0.3.0 - January 21, 2019
 - Set `fixName` on returned actions. Thanks @kondi!
 - Fix TS Lint's fix all quick fix showing up on non-tslint errors.
 - Use `getCombinedQuickFixes` to compute 'fix all of X' errors. 

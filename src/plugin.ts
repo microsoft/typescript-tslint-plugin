@@ -1,4 +1,5 @@
 import * as tslint from 'tslint';
+import * as path from 'path';
 import * as ts_module from 'typescript/lib/tsserverlibrary';
 import { TSLINT_ERROR_CODE, TSLINT_ERROR_SOURCE } from './config';
 import { ConfigFileWatcher } from './configFileWatcher';
@@ -160,10 +161,31 @@ export class TSLintPlugin {
                 return diagnostics;
             }
 
-            const file = this.getProgram().getSourceFile(fileName)!;
-
-            for (const warning of result.warnings) {
-                this.logger.info(`[tslint] ${warning}`);
+            const program = this.getProgram();
+            const file = program.getSourceFile(fileName)!;
+            if (result.warnings) {
+                const defaultTsconfigJsonPath = path.join(program.getCurrentDirectory(), 'tslint.json');
+                if ((result.configFilePath && this.ts.sys.fileExists(result.configFilePath)) || this.ts.sys.fileExists(defaultTsconfigJsonPath)) {
+                    // If we have a config file, the user likely wanted to lint. The fact that linting has a
+                    // warning should be reported to them.
+                    for (const warning of result.warnings) {
+                        diagnostics.unshift({
+                            file,
+                            start: 0,
+                            length: 1,
+                            category: this.ts.DiagnosticCategory.Warning,
+                            code: TSLINT_ERROR_CODE,
+                            messageText: warning,
+                        });
+                    }
+                } else {
+                    // If we have not found a config file, then we don't want to annoy users by generating warnings
+                    // about tslint not being installed or misconfigured. In many cases, the user is opening a
+                    // file/project that was not intended to be linted.
+                    for (const warning of result.warnings) {
+                        this.logger.info(`[tslint] ${warning}`);
+                    }
+                }
             }
 
             const tslintProblems = filterProblemsForFile(fileName, result.lintResult.failures);
@@ -332,7 +354,6 @@ export class TSLintPlugin {
             : `${failure.getFailure()}`;
 
         const category = this.getDiagnosticCategory(failure);
-
         return {
             file,
             start: failure.getStartPosition().getPosition(),

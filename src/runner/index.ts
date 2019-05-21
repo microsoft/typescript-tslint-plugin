@@ -113,7 +113,6 @@ export class TsLintRunner {
                 warnings: [
                     getInstallFailureMessage(
                         filePath,
-                        configuration.workspaceFolderPath,
                         configuration.packageManager || 'npm'),
                 ],
             };
@@ -392,7 +391,7 @@ function testForExclusionPattern(filePath: string, pattern: string, cwd: string 
     return minimatch(filePath, pattern, { dot: true });
 }
 
-function getInstallFailureMessage(filePath: string, workspaceFolder: string | undefined, packageManager: 'npm' | 'yarn'): string {
+function getInstallFailureMessage(filePath: string, packageManager: 'npm' | 'yarn'): string {
     const localCommands = {
         npm: 'npm install tslint',
         yarn: 'yarn add tslint',
@@ -401,23 +400,12 @@ function getInstallFailureMessage(filePath: string, workspaceFolder: string | un
         npm: 'npm install -g tslint',
         yarn: 'yarn global add tslint',
     };
-    if (workspaceFolder) { // workspace opened on a folder
-        return [
-            '',
-            `Failed to load the TSLint library for the document ${filePath}`,
-            '',
-            `To use TSLint in this workspace please install tslint using \'${localCommands[packageManager]}\' or globally using \'${globalCommands[packageManager]}\'.`,
-            'TSLint has a peer dependency on `typescript`, make sure that `typescript` is installed as well.',
-            'You need to reopen the workspace after installing tslint.',
-        ].join('\n');
-    } else {
-        return [
-            `Failed to load the TSLint library for the document ${filePath}`,
-            `To use TSLint for single file install tslint globally using \'${globalCommands[packageManager]}\'.`,
-            'TSLint has a peer dependency on `typescript`, make sure that `typescript` is installed as well.',
-            'You need to reopen VS Code after installing tslint.',
-        ].join('\n');
-    }
+
+    return [
+        `Failed to load the TSLint library for '${filePath}'`,
+        `To use TSLint, please install tslint using \'${localCommands[packageManager]}\' or globally using \'${globalCommands[packageManager]}\'.`,
+        'Be sure to restart your editor after installing tslint.',
+    ].join('\n');
 }
 
 function isJsDocument(filePath: string) {

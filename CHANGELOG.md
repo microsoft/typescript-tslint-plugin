@@ -1,6 +1,9 @@
 # Changelog
 
-## 0.4.0 - May 21, 2010
+## 0.5.0 - June 10, 2019
+- Add pnpm as `packageManager` option.
+
+## 0.4.0 - May 21, 2019
 - Try to help users better understand why tslint is not enabled by generating warnings if there is a `tslint.json` and the tslint library cannot be found or generates an error.
 
 ## 0.3.1 - January 31, 2019

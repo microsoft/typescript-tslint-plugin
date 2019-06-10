@@ -28,8 +28,8 @@
     "@types/mock-require": "^2.0.0",
     "@types/node": "^7.0.8",
     "chai": "^4.2.0",
-    "mocha": "^5.2.0",
-    "tslint": "^5.16.0",
+    "mocha": "^6.1.4",
+    "tslint": "^5.17.0",
     "typescript": "^3.5.1"
   }
 }

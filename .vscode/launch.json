@@ -15,9 +15,7 @@
                 "--timeout",
                 "999999",
                 "--colors",
-                "${workspaceFolder}/out/runner/test",
-                // "-g",
-                // "exclude"
+                "${workspaceFolder}/out/runner/test"
             ],
             "internalConsoleOptions": "openOnSessionStart"
         }

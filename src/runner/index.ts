@@ -8,6 +8,7 @@ import * as util from 'util';
 import * as server from 'vscode-languageserver';
 import { MruCache } from './mruCache';
 
+export type PackageManagers = 'npm' | 'pnpm' | 'yarn';
 export interface RunConfiguration {
     readonly jsEnable: boolean;
     readonly rulesDirectory?: string | string[];
@@ -16,7 +17,7 @@ export interface RunConfiguration {
     readonly exclude: string[];
     readonly validateWithDefaultConfig?: boolean;
     readonly nodePath?: string;
-    readonly packageManager?: 'npm' | 'yarn';
+    readonly packageManager?: PackageManagers;
     readonly traceLevel?: 'verbose' | 'normal';
     readonly workspaceFolderPath?: string;
 }
@@ -82,7 +83,7 @@ export class TsLintRunner {
     private readonly document2LibraryCache = new MruCache<() => typeof tslint | undefined>(100);
 
     // map stores undefined values to represent failed resolutions
-    private readonly globalPackageManagerPath = new Map<string, string>();
+    private readonly globalPackageManagerPath = new Map<PackageManagers, string>();
     private readonly configCache = new ConfigCache();
 
     constructor(
@@ -184,7 +185,7 @@ export class TsLintRunner {
         });
     }
 
-    private getGlobalPackageManagerPath(packageManager: string = 'npm'): string | undefined {
+    private getGlobalPackageManagerPath(packageManager: PackageManagers = 'npm'): string | undefined {
         this.traceMethod('getGlobalPackageManagerPath', `Begin - Resolve Global Package Manager Path for: ${packageManager}`);
 
         if (!this.globalPackageManagerPath.has(packageManager)) {
@@ -193,6 +194,8 @@ export class TsLintRunner {
                 path = server.Files.resolveGlobalNodePath(this.trace);
             } else if (packageManager === 'yarn') {
                 path = server.Files.resolveGlobalYarnPath(this.trace);
+            } else if (packageManager === 'pnpm') {
+                path = cp.execSync('pnpm root -g').toString().trim();
             }
             this.globalPackageManagerPath.set(packageManager, path!);
         }
@@ -391,13 +394,15 @@ function testForExclusionPattern(filePath: string, pattern: string, cwd: string 
     return minimatch(filePath, pattern, { dot: true });
 }
 
-function getInstallFailureMessage(filePath: string, packageManager: 'npm' | 'yarn'): string {
+function getInstallFailureMessage(filePath: string, packageManager: PackageManagers): string {
     const localCommands = {
         npm: 'npm install tslint',
+        pnpm: 'pnpm install tslint',
         yarn: 'yarn add tslint',
     };
     const globalCommands = {
         npm: 'npm install -g tslint',
+        pnpm: 'pnpm install -g tslint',
         yarn: 'yarn global add tslint',
     };
 

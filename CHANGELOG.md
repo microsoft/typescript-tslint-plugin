@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.5.2 - June 21, 2019
+- Fixes the config file diagnostic not having `tslint` as its source.
+
 ## 0.5.1 - June 21, 2019
 - Fixes `mjs` files being linted by default.
 

@@ -174,6 +174,7 @@ export class TSLintPlugin {
                             start: 0,
                             length: 1,
                             category: this.ts.DiagnosticCategory.Warning,
+                            source: TSLINT_ERROR_SOURCE,
                             code: TSLINT_ERROR_CODE,
                             messageText: warning,
                         });

@@ -90,7 +90,7 @@ describe('TSLintRunner', () => {
                 ...defaultRunConfiguration,
                 workspaceFolderPath: root,
                 exclude: ['test.ts'],
-            } );
+            });
 
             expect(result.lintResult.errorCount).to.equal(0);
         });
@@ -163,6 +163,21 @@ describe('TSLintRunner', () => {
             expect(result.lintResult.errorCount).to.equal(0);
             expect(result.warnings.length).to.equal(0);
         });
+
+        it('should not return errors in js files by default', () => {
+            const root = path.join(testDataRoot, 'js-disabled');
+            {
+                const filePath = path.join(root, 'test.mjs');
+                const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), defaultRunConfiguration);
+                expect(result.lintResult.errorCount).to.equal(0);
+            }
+            {
+                const filePath = path.join(root, 'test.mjs');
+                const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), defaultRunConfiguration);
+                expect(result.lintResult.errorCount).to.equal(0);
+            }
+        });
+
     });
 
     describe('filterProblemsForFile', () => {

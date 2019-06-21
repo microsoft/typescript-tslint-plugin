@@ -211,7 +211,6 @@ export class TsLintRunner {
         warnings: string[],
     ): RunResult {
         this.traceMethod('doRun', `starting validation for ${filePath}`);
-        const uri = filePath;
 
         let cwd = configuration.workspaceFolderPath;
         if (!cwd && typeof contents === "object") {
@@ -232,7 +231,7 @@ export class TsLintRunner {
         let linterConfiguration: Configuration | undefined;
         this.traceMethod('doRun', 'About to getConfiguration');
         try {
-            linterConfiguration = this.getConfiguration(uri, filePath, library, configFile);
+            linterConfiguration = this.getConfiguration(filePath, filePath, library, configFile);
         } catch (err) {
             this.traceMethod('doRun', `No linting: exception when getting tslint configuration for ${filePath}, configFile= ${configFile}`);
             warnings.push(getConfigurationFailureMessage(err));
@@ -413,8 +412,8 @@ function getInstallFailureMessage(filePath: string, packageManager: PackageManag
     ].join('\n');
 }
 
-function isJsDocument(filePath: string) {
-    return filePath.match(/\.jsx?$/i);
+function isJsDocument(filePath: string): boolean {
+    return /\.(jsx?|mjs)$/i.test(filePath);
 }
 
 function isExcludedFromLinterOptions(

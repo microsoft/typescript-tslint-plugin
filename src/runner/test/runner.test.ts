@@ -184,7 +184,7 @@ describe('TSLintRunner', () => {
             const filePath = path.join(root, 'test.ts');
             const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), {
                 configFile: path.join(root, 'tslint.js'),
-                ...defaultRunConfiguration
+                ...defaultRunConfiguration,
             });
             expect(result.lintResult.errorCount).to.equal(2);
             expect(result.lintResult.failures[0].getRuleName()).to.equal('array-type');

@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.5.1 - June 21, 2019
+- Fixes `mjs` files being linted by default.
+
 ## 0.5.0 - June 10, 2019
 - Add pnpm as `packageManager` option.
 

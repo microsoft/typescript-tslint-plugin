@@ -178,6 +178,18 @@ describe('TSLintRunner', () => {
             }
         });
 
+        it('should support using a tslint.js config file', () => {
+            const root = path.join(testDataRoot, 'with-tslint-js-config-file');
+
+            const filePath = path.join(root, 'test.ts');
+            const result = createTsLintRunner().runTsLint(filePath, fs.readFileSync(filePath).toString(), {
+                configFile: path.join(root, 'tslint.js'),
+                ...defaultRunConfiguration
+            });
+            expect(result.lintResult.errorCount).to.equal(2);
+            expect(result.lintResult.failures[0].getRuleName()).to.equal('array-type');
+            expect(result.lintResult.failures[1].getRuleName()).to.equal('quotemark');
+        });
     });
 
     describe('filterProblemsForFile', () => {

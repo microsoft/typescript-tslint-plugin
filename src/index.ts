@@ -24,7 +24,7 @@ export = function init({ typescript }: { typescript: typeof ts_module }) {
                 return info.languageService;
             }
 
-            return new TSLintPlugin(typescript, logger, info.project, configManager)
+            return new TSLintPlugin(typescript, info.languageServiceHost, logger, info.project, configManager)
                 .decorate(info.languageService);
         },
         onConfigurationChanged(config: any) {

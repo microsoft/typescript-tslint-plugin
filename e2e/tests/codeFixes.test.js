@@ -9,11 +9,11 @@ const { openMockFile, getFirstResponseOfType } = require('./helpers');
 const mockFileName = path.join(__dirname, '..', 'project-fixture', 'main.ts').replace(/\\/g, '/');
 
 /**
- * @param {string} fileContents 
+ * @param {string[]} fileContents 
  */
-function createServerForFile(fileContents) {
+function createServerForFile(...fileContents) {
     const server = createServer();
-    openMockFile(server, mockFileName, fileContents);
+    openMockFile(server, mockFileName, fileContents.join('\n'));
     return server;
 }
 
@@ -393,5 +393,30 @@ describe('CodeFixes', () => {
         assert.deepEqual(codeFixesResponse.body.length, 2);
         assert.deepEqual(codeFixesResponse.body[0].fixName, 'spelling');
         assert.deepEqual(codeFixesResponse.body[1].fixName, 'tslint:disable:no-unused-expression');
+    });
+
+    it('disable comment should be correctly indented', async () => {
+        server = createServerForFile(
+            '{',
+            '    const a = 1',
+            '}'
+        );
+        await getCodeFixes(server, {
+            startLine: 2,
+            startOffset: 16,
+            endLine: 2,
+            endOffset: 16,
+            additionalErrorCodes: [2552]
+        });
+        await server.close();
+        const codeFixesResponse = await getFirstResponseOfType('getCodeFixes', server);
+
+        assert.isTrue(codeFixesResponse.success);
+        assert.deepEqual(codeFixesResponse.body.length, 3);
+        const disableFix = codeFixesResponse.body[2];
+        const change = disableFix.changes[0].textChanges[0];
+        assert.strictEqual(change.start.line, 2);
+        assert.strictEqual(change.start.offset, 1);
+        assert.strictEqual(change.newText, '    // tslint:disable-next-line: semicolon\n');
     });
 });

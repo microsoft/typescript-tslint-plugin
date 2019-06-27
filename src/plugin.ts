@@ -56,6 +56,7 @@ export class TSLintPlugin {
 
     public constructor(
         private readonly ts: typeof ts_module,
+        private readonly languageServiceHost: ts_module.LanguageServiceHost,
         private readonly logger: Logger,
         private readonly project: ts_module.server.Project,
         private readonly configurationManager: ConfigurationManager,
@@ -320,14 +321,28 @@ export class TSLintPlugin {
     }
 
     private getDisableRuleQuickFix(failure: tslint.RuleFailure, fileName: string, file: ts_module.SourceFile): ts_module.CodeFixAction {
+        const line = failure.getStartPosition().getLineAndCharacter().line;
+        const lineStarts = file.getLineStarts();
+        const lineStart = lineStarts[line];
+        let prefix = '';
+        const snapshot = this.languageServiceHost.getScriptSnapshot(fileName);
+        if (snapshot) {
+            const lineEnd = line < lineStarts.length - 1 ? lineStarts[line + 1] : file.end;
+            const lineText = snapshot.getText(lineStart, lineEnd);
+            const leadingSpace = lineText.match(/^([ \t]+)/);
+            if (leadingSpace) {
+                prefix = leadingSpace[0];
+            }
+        }
+
         return {
             description: `Disable rule '${failure.getRuleName()}'`,
             fixName: `tslint:disable:${failure.getRuleName()}`,
             changes: [{
                 fileName,
                 textChanges: [{
-                    newText: `// tslint:disable-next-line: ${failure.getRuleName()}\n`,
-                    span: { start: file.getLineStarts()[failure.getStartPosition().getLineAndCharacter().line], length: 0 },
+                    newText: `${prefix}// tslint:disable-next-line: ${failure.getRuleName()}\n`,
+                    span: { start: lineStart, length: 0 },
                 }],
             }],
         };

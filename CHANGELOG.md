@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.5.3 - June 28, 2019
+- Fixed the disable quick fix not having correct indentation.
+
 ## 0.5.2 - June 21, 2019
 - Fixes the config file diagnostic not having `tslint` as its source.
 

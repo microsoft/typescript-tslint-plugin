@@ -13,6 +13,7 @@ export interface Configuration {
     readonly suppressWhileTypeErrorsPresent: boolean;
     readonly jsEnable: boolean;
     readonly exclude?: string | string[];
+    readonly packageManager?: string;
 }
 
 export class ConfigurationManager {

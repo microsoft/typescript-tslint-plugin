@@ -8,7 +8,17 @@ import * as util from 'util';
 import * as server from 'vscode-languageserver';
 import { MruCache } from './mruCache';
 
-export type PackageManagers = 'npm' | 'pnpm' | 'yarn';
+export type PackageManager = 'npm' | 'pnpm' | 'yarn';
+
+export function toPackageManager(manager: string | undefined): PackageManager | undefined {
+    switch (manager && manager.toLowerCase()) {
+        case 'npm': return 'npm';
+        case 'pnpm': return 'pnpm';
+        case 'yarn': return 'yarn';
+        default: return undefined;
+    }
+}
+
 export interface RunConfiguration {
     readonly jsEnable: boolean;
     readonly rulesDirectory?: string | string[];
@@ -17,7 +27,7 @@ export interface RunConfiguration {
     readonly exclude: string[];
     readonly validateWithDefaultConfig?: boolean;
     readonly nodePath?: string;
-    readonly packageManager?: PackageManagers;
+    readonly packageManager?: PackageManager;
     readonly traceLevel?: 'verbose' | 'normal';
     readonly workspaceFolderPath?: string;
 }
@@ -83,7 +93,7 @@ export class TsLintRunner {
     private readonly document2LibraryCache = new MruCache<() => typeof tslint | undefined>(100);
 
     // map stores undefined values to represent failed resolutions
-    private readonly globalPackageManagerPath = new Map<PackageManagers, string>();
+    private readonly globalPackageManagerPath = new Map<PackageManager, string | undefined>();
     private readonly configCache = new ConfigCache();
 
     constructor(
@@ -185,7 +195,7 @@ export class TsLintRunner {
         });
     }
 
-    private getGlobalPackageManagerPath(packageManager: PackageManagers = 'npm'): string | undefined {
+    private getGlobalPackageManagerPath(packageManager: PackageManager = 'npm'): string | undefined {
         this.traceMethod('getGlobalPackageManagerPath', `Begin - Resolve Global Package Manager Path for: ${packageManager}`);
 
         if (!this.globalPackageManagerPath.has(packageManager)) {
@@ -197,7 +207,7 @@ export class TsLintRunner {
             } else if (packageManager === 'pnpm') {
                 path = cp.execSync('pnpm root -g').toString().trim();
             }
-            this.globalPackageManagerPath.set(packageManager, path!);
+            this.globalPackageManagerPath.set(packageManager, path);
         }
         this.traceMethod('getGlobalPackageManagerPath', `Done - Resolve Global Package Manager Path for: ${packageManager}`);
         return this.globalPackageManagerPath.get(packageManager);
@@ -393,7 +403,7 @@ function testForExclusionPattern(filePath: string, pattern: string, cwd: string 
     return minimatch(filePath, pattern, { dot: true });
 }
 
-function getInstallFailureMessage(filePath: string, packageManager: PackageManagers): string {
+function getInstallFailureMessage(filePath: string, packageManager: PackageManager): string {
     const localCommands = {
         npm: 'npm install tslint',
         pnpm: 'pnpm install tslint',

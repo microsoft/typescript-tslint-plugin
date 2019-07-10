@@ -4,7 +4,7 @@ import * as ts_module from 'typescript/lib/tsserverlibrary';
 import { TSLINT_ERROR_CODE, TSLINT_ERROR_SOURCE } from './config';
 import { ConfigFileWatcher } from './configFileWatcher';
 import { Logger } from './logger';
-import { RunResult, TsLintRunner } from './runner';
+import { RunResult, TsLintRunner, toPackageManager } from './runner';
 import { ConfigurationManager } from './settings';
 import { getNonOverlappingReplacements, filterProblemsForFile, getReplacements } from './runner/failures';
 
@@ -149,6 +149,7 @@ export class TSLintPlugin {
                     exclude: config.exclude
                         ? Array.isArray(config.exclude) ? config.exclude : [config.exclude]
                         : [],
+                    packageManager: toPackageManager(config.packageManager),
                 });
                 if (result.configFilePath) {
                     this.configFileWatcher.ensureWatching(result.configFilePath);

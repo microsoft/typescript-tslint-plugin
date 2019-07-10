@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.5.4 - July 10, 2019
+- Make sure we pass along packageManager from plugin.
+
 ## 0.5.3 - June 28, 2019
 - Fixed the disable quick fix not having correct indentation.
 

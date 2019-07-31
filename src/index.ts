@@ -8,6 +8,7 @@ export = function init({ typescript }: { typescript: typeof ts_module }) {
     const configManager = new ConfigurationManager(typescript);
     let logger: Logger | undefined;
 
+    // مطمئن باشید که تی اس لینت ایپورت کرده نسخه صحیح از تایپ اسکریپ را
     // Make sure TS Lint imports the correct version of TS
     mockRequire('typescript', typescript);
 

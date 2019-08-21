@@ -18,8 +18,8 @@
   },
   "dependencies": {
     "minimatch": "^3.0.4",
-    "mock-require": "^3.0.2",
-    "vscode-languageserver": "^5.1.0"
+    "mock-require": "^3.0.3",
+    "vscode-languageserver": "^5.2.1"
   },
   "devDependencies": {
     "@types/chai": "^4.1.6",
@@ -28,7 +28,7 @@
     "@types/mock-require": "^2.0.0",
     "@types/node": "^7.0.8",
     "chai": "^4.2.0",
-    "mocha": "^6.1.4",
+    "mocha": "^6.2.0",
     "tslint": "^5.19.0",
     "typescript": "^3.5.1"
   }

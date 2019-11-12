@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.5.5 - November 11, 2019
+- Restore old cwd after linting finishes.
+
 ## 0.5.4 - July 10, 2019
 - Make sure we pass along packageManager from plugin.
 

@@ -232,81 +232,89 @@ export class TsLintRunner {
             return emptyResult;
         }
 
+        let cwdToRestore: string | undefined;
         if (cwd) {
             this.traceMethod('doRun', `Changed directory to ${cwd}`);
+            cwdToRestore = process.cwd();
             process.chdir(cwd);
         }
-
-        const configFile = configuration.configFile || null;
-        let linterConfiguration: Configuration | undefined;
-        this.traceMethod('doRun', 'About to getConfiguration');
+        
         try {
-            linterConfiguration = this.getConfiguration(filePath, filePath, library, configFile);
-        } catch (err) {
-            this.traceMethod('doRun', `No linting: exception when getting tslint configuration for ${filePath}, configFile= ${configFile}`);
-            warnings.push(getConfigurationFailureMessage(err));
-            return {
-                lintResult: emptyLintResult,
-                warnings,
+            const configFile = configuration.configFile || null;
+            let linterConfiguration: Configuration | undefined;
+            this.traceMethod('doRun', 'About to getConfiguration');
+            try {
+                linterConfiguration = this.getConfiguration(filePath, filePath, library, configFile);
+            } catch (err) {
+                this.traceMethod('doRun', `No linting: exception when getting tslint configuration for ${filePath}, configFile= ${configFile}`);
+                warnings.push(getConfigurationFailureMessage(err));
+                return {
+                    lintResult: emptyLintResult,
+                    warnings,
+                };
+            }
+
+            if (!linterConfiguration) {
+                this.traceMethod('doRun', `No linting: no tslint configuration`);
+                return emptyResult;
+            }
+            this.traceMethod('doRun', 'Configuration fetched');
+
+            if (isJsDocument(filePath) && !configuration.jsEnable) {
+                this.traceMethod('doRun', `No linting: a JS document, but js linting is disabled`);
+                return emptyResult;
+            }
+
+            if (configuration.validateWithDefaultConfig === false && this.configCache.configuration!.isDefaultLinterConfig) {
+                this.traceMethod('doRun', `No linting: linting with default tslint configuration is disabled`);
+                return emptyResult;
+            }
+
+            if (isExcludedFromLinterOptions(linterConfiguration.linterConfiguration, filePath)) {
+                this.traceMethod('doRun', `No linting: file is excluded using linterOptions.exclude`);
+                return emptyResult;
+            }
+
+            let result: tslint.LintResult;
+            const options: tslint.ILinterOptions = {
+                formatter: "json",
+                fix: false,
+                rulesDirectory: configuration.rulesDirectory || undefined,
+                formattersDirectory: undefined,
             };
-        }
+            if (configuration.traceLevel && configuration.traceLevel === 'verbose') {
+                this.traceConfigurationFile(linterConfiguration.linterConfiguration);
+            }
 
-        if (!linterConfiguration) {
-            this.traceMethod('doRun', `No linting: no tslint configuration`);
-            return emptyResult;
-        }
-        this.traceMethod('doRun', 'Configuration fetched');
+            // tslint writes warnings using console.warn, capture these warnings and send them to the client
+            const originalConsoleWarn = console.warn;
+            const captureWarnings = (message?: any) => {
+                warnings.push(message);
+                originalConsoleWarn(message);
+            };
+            console.warn = captureWarnings;
 
-        if (isJsDocument(filePath) && !configuration.jsEnable) {
-            this.traceMethod('doRun', `No linting: a JS document, but js linting is disabled`);
-            return emptyResult;
-        }
+            try { // clean up if tslint crashes
+                const linter = new library.Linter(options, typeof contents === 'string' ? undefined : contents);
+                this.traceMethod('doRun', `Linting: start linting`);
+                linter.lint(filePath, typeof contents === 'string' ? contents : '', linterConfiguration.linterConfiguration);
+                result = linter.getResult();
+                this.traceMethod('doRun', `Linting: ended linting`);
+            } finally {
+                console.warn = originalConsoleWarn;
+            }
 
-        if (configuration.validateWithDefaultConfig === false && this.configCache.configuration!.isDefaultLinterConfig) {
-            this.traceMethod('doRun', `No linting: linting with default tslint configuration is disabled`);
-            return emptyResult;
-        }
-
-        if (isExcludedFromLinterOptions(linterConfiguration.linterConfiguration, filePath)) {
-            this.traceMethod('doRun', `No linting: file is excluded using linterOptions.exclude`);
-            return emptyResult;
-        }
-
-        let result: tslint.LintResult;
-        const options: tslint.ILinterOptions = {
-            formatter: "json",
-            fix: false,
-            rulesDirectory: configuration.rulesDirectory || undefined,
-            formattersDirectory: undefined,
-        };
-        if (configuration.traceLevel && configuration.traceLevel === 'verbose') {
-            this.traceConfigurationFile(linterConfiguration.linterConfiguration);
-        }
-
-        // tslint writes warnings using console.warn, capture these warnings and send them to the client
-        const originalConsoleWarn = console.warn;
-        const captureWarnings = (message?: any) => {
-            warnings.push(message);
-            originalConsoleWarn(message);
-        };
-        console.warn = captureWarnings;
-
-        try { // clean up if tslint crashes
-            const linter = new library.Linter(options, typeof contents === 'string' ? undefined : contents);
-            this.traceMethod('doRun', `Linting: start linting`);
-            linter.lint(filePath, typeof contents === 'string' ? contents : '', linterConfiguration.linterConfiguration);
-            result = linter.getResult();
-            this.traceMethod('doRun', `Linting: ended linting`);
+            return {
+                lintResult: result,
+                warnings,
+                workspaceFolderPath: configuration.workspaceFolderPath,
+                configFilePath: linterConfiguration.path,
+            };
         } finally {
-            console.warn = originalConsoleWarn;
+            if (typeof cwdToRestore === 'string') {
+                process.chdir(cwdToRestore);
+            }
         }
-
-        return {
-            lintResult: result,
-            warnings,
-            workspaceFolderPath: configuration.workspaceFolderPath,
-            configFilePath: linterConfiguration.path,
-        };
     }
 
     private getConfiguration(uri: string, filePath: string, library: typeof tslint, configFileName: string | null): Configuration | undefined {

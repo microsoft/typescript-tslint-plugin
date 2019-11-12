@@ -238,7 +238,7 @@ export class TsLintRunner {
             cwdToRestore = process.cwd();
             process.chdir(cwd);
         }
-        
+
         try {
             const configFile = configuration.configFile || null;
             let linterConfiguration: Configuration | undefined;

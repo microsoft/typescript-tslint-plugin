@@ -2,7 +2,11 @@
 
 [![Build Status](https://travis-ci.org/Microsoft/typescript-tslint-plugin.svg?branch=master)](https://travis-ci.org/Microsoft/typescript-tslint-plugin)
 
-TypeScript [language service plugin](https://blogs.msdn.microsoft.com/typescript/2017/04/27/announcing-typescript-2-3/) for [TSLint][tslint]. 
+> **❗IMPORTANT**: TSLint [has been deprecated](https://medium.com/palantir/tslint-in-2019-1a144c2317a9) in favor of ESLint.
+>
+> Please look into [migrating your projects to ESLint](https://github.com/typescript-eslint/typescript-eslint#typescript-eslint).
+
+TypeScript [language service plugin](https://blogs.msdn.microsoft.com/typescript/2017/04/27/announcing-typescript-2-3/) for [TSLint][tslint].
 
 To use the plugin:
 

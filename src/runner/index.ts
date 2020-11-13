@@ -391,8 +391,8 @@ export class TsLintRunner {
             this.traceMethod('resolveTsLint', `NODE_PATH value is: ${newEnv[nodePathKey]}`);
         }
         newEnv.ELECTRON_RUN_AS_NODE = '1';
-        const spanwResults = cp.spawnSync(process.argv0, ['-e', app], { cwd, env: newEnv });
-        return spanwResults.stdout.toString().trim();
+        const spawnResults = cp.spawnSync(process.argv0, ['-e', app], { cwd, env: newEnv });
+        return spawnResults.stdout.toString().trim();
     }
 }
 

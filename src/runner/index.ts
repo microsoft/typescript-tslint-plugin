@@ -1,8 +1,8 @@
 import * as cp from 'child_process';
 import * as minimatch from 'minimatch';
-import { dirname, delimiter, relative } from 'path';
-import * as tslint from 'tslint'; // this is a dev dependency only
-import * as typescript from 'typescript'; // this is a dev dependency only
+import { delimiter, dirname, relative } from 'path';
+import type * as tslint from 'tslint';
+import type * as typescript from 'typescript';
 import * as util from 'util';
 import * as server from 'vscode-languageserver';
 import { MruCache } from './mruCache';

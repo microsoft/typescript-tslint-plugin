@@ -1,5 +1,4 @@
 import * as cp from 'child_process';
-import * as fs from 'fs';
 import * as minimatch from 'minimatch';
 import { dirname, delimiter, relative } from 'path';
 import * as tslint from 'tslint'; // this is a dev dependency only
@@ -26,7 +25,6 @@ export interface RunConfiguration {
     readonly ignoreDefinitionFiles: boolean;
     readonly exclude: string[];
     readonly validateWithDefaultConfig?: boolean;
-    readonly nodePath?: string;
     readonly packageManager?: PackageManager;
     readonly traceLevel?: 'verbose' | 'normal';
     readonly workspaceFolderPath?: string;
@@ -109,7 +107,7 @@ export class TsLintRunner {
 
         const warnings: string[] = [];
         if (!this.document2LibraryCache.has(filePath)) {
-            this.loadLibrary(filePath, configuration, warnings);
+            this.loadLibrary(filePath, configuration);
         }
         this.traceMethod('runTsLint', 'Loaded tslint library');
 
@@ -141,41 +139,20 @@ export class TsLintRunner {
         this.trace(`(${method}) ${message}`);
     }
 
-    private loadLibrary(filePath: string, configuration: RunConfiguration, warningsOutput: string[]): void {
+    private loadLibrary(filePath: string, configuration: RunConfiguration): void {
         this.traceMethod('loadLibrary', `trying to load ${filePath}`);
         const getGlobalPath = () => this.getGlobalPackageManagerPath(configuration.packageManager);
         const directory = dirname(filePath);
 
-        let np: string | undefined;
-        if (configuration && configuration.nodePath) {
-            const exists = fs.existsSync(configuration.nodePath);
-            if (exists) {
-                np = configuration.nodePath;
-            } else {
-                warningsOutput.push(`The setting 'tslint.nodePath' refers to '${configuration.nodePath}', but this path does not exist. The setting will be ignored.`);
-            }
-        }
-
         let tsLintPath: string;
 
-        if (np) {
-            try {
-                tsLintPath = this.resolveTsLint(np, np!);
-                if (tsLintPath.length === 0) {
-                    tsLintPath = this.resolveTsLint(getGlobalPath(), directory);
-                }
-            } catch {
+        try {
+            tsLintPath = this.resolveTsLint(undefined, directory);
+            if (tsLintPath.length === 0) {
                 tsLintPath = this.resolveTsLint(getGlobalPath(), directory);
             }
-        } else {
-            try {
-                tsLintPath = this.resolveTsLint(undefined, directory);
-                if (tsLintPath.length === 0) {
-                    tsLintPath = this.resolveTsLint(getGlobalPath(), directory);
-                }
-            } catch {
-                tsLintPath = this.resolveTsLint(getGlobalPath(), directory);
-            }
+        } catch {
+            tsLintPath = this.resolveTsLint(getGlobalPath(), directory);
         }
 
         this.traceMethod('loadLibrary', `Resolved tslint to ${tsLintPath}`);

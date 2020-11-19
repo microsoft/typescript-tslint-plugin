@@ -1,7 +1,8 @@
 import * as cp from 'child_process';
 import * as minimatch from 'minimatch';
-import { delimiter, dirname, relative } from 'path';
+import { dirname, join, normalize, relative, sep } from 'path';
 import type * as tslint from 'tslint';
+import type { IConfigurationFile } from 'tslint/lib/configuration';
 import type * as typescript from 'typescript';
 import * as util from 'util';
 import * as server from 'vscode-languageserver';
@@ -28,6 +29,29 @@ export interface RunConfiguration {
     readonly packageManager?: PackageManager;
     readonly traceLevel?: 'verbose' | 'normal';
     readonly workspaceFolderPath?: string;
+
+    /**
+     * Controls where TSlint and other scripts can be loaded from.
+     */
+    readonly workspaceLibraryExecution: WorkspaceLibraryExecution;
+}
+
+/**
+ * Controls where TSlint and other scripts can be loaded from.
+ */
+export enum WorkspaceLibraryExecution {
+    /**
+     * Block executing TSLint, linter rules, and other scripts from the current workspace.
+     */
+    Disallow = 1,
+    /**
+     * Enable loading TSLint and rules from the workspace.
+     */
+    Allow = 2,
+    /**
+     * The workspace library execution has not yet been configured or cannot be determined.
+     */
+    Unknown = 3,
 }
 
 interface Configuration {
@@ -87,8 +111,13 @@ const emptyResult: RunResult = {
 };
 
 export class TsLintRunner {
-    private readonly tslintPath2Library = new Map<string, typeof tslint | undefined>();
-    private readonly document2LibraryCache = new MruCache<() => typeof tslint | undefined>(100);
+    private readonly tslintPath2Library = new Map<string, { tslint: typeof tslint, path: string } | undefined>();
+
+    private readonly document2LibraryCache = new MruCache<{
+        readonly workspaceTslintPath: string | undefined,
+        readonly globalTsLintPath: string | undefined,
+        getTSLint(isTrusted: boolean): { tslint: typeof tslint, path: string } | undefined
+    }>(100);
 
     // map stores undefined values to represent failed resolutions
     private readonly globalPackageManagerPath = new Map<PackageManager, string | undefined>();
@@ -115,7 +144,41 @@ export class TsLintRunner {
             return emptyResult;
         }
 
-        const library = this.document2LibraryCache.get(filePath)!();
+        const cacheEntry = this.document2LibraryCache.get(filePath)!;
+
+        let library: { tslint: typeof tslint, path: string } | undefined;
+
+        switch (configuration.workspaceLibraryExecution) {
+            case WorkspaceLibraryExecution.Disallow:
+                library = cacheEntry.getTSLint(false);
+                break;
+
+            case WorkspaceLibraryExecution.Allow:
+                library = cacheEntry.getTSLint(true);
+                break;
+
+            default:
+                if (cacheEntry.workspaceTslintPath) {
+                    if (this.isWorkspaceImplicitlyTrusted(cacheEntry.workspaceTslintPath)) {
+                        configuration = { ...configuration, workspaceLibraryExecution: WorkspaceLibraryExecution.Allow };
+                        library = cacheEntry.getTSLint(true);
+                        break;
+                    }
+
+                    // If the user has not explicitly trusted/not trusted the workspace AND we have a workspace TS version
+                    // show a special error that lets the user trust/untrust the workspace
+                    return {
+                        lintResult: emptyLintResult,
+                        warnings: [
+                            getWorkspaceNotTrustedMessage(filePath),
+                        ],
+                    };
+                } else if (cacheEntry.globalTsLintPath) {
+                    library = cacheEntry.getTSLint(false);
+                }
+                break;
+        }
+
         if (!library) {
             return {
                 lintResult: emptyLintResult,
@@ -141,35 +204,59 @@ export class TsLintRunner {
 
     private loadLibrary(filePath: string, configuration: RunConfiguration): void {
         this.traceMethod('loadLibrary', `trying to load ${filePath}`);
-        const getGlobalPath = () => this.getGlobalPackageManagerPath(configuration.packageManager);
         const directory = dirname(filePath);
 
-        let tsLintPath: string;
+        const tsLintPaths = this.getTsLintPaths(directory, configuration.packageManager);
 
-        try {
-            tsLintPath = this.resolveTsLint(undefined, directory);
-            if (tsLintPath.length === 0) {
-                tsLintPath = this.resolveTsLint(getGlobalPath(), directory);
-            }
-        } catch {
-            tsLintPath = this.resolveTsLint(getGlobalPath(), directory);
-        }
+        this.traceMethod('loadLibrary', `Resolved tslint to workspace: '${tsLintPaths.workspaceTsLintPath}' global: '${tsLintPaths.globalTsLintPath}'`);
 
-        this.traceMethod('loadLibrary', `Resolved tslint to ${tsLintPath}`);
+        this.document2LibraryCache.set(filePath, {
+            workspaceTslintPath: tsLintPaths.workspaceTsLintPath || undefined,
+            globalTsLintPath: tsLintPaths.globalTsLintPath || undefined,
+            getTSLint: (allowWorkspaceLibraryExecution: boolean) => {
+                const tsLintPath = allowWorkspaceLibraryExecution
+                    ? tsLintPaths.workspaceTsLintPath || tsLintPaths.globalTsLintPath
+                    : tsLintPaths.globalTsLintPath;
 
-        this.document2LibraryCache.set(filePath, () => {
-            let library;
-            if (!this.tslintPath2Library.has(tsLintPath)) {
-                try {
-                    library = require(tsLintPath);
-                } catch (e) {
-                    this.tslintPath2Library.set(tsLintPath, undefined);
+                if (!tsLintPath) {
                     return;
                 }
-                this.tslintPath2Library.set(tsLintPath, library);
+
+                let library;
+                if (!this.tslintPath2Library.has(tsLintPath)) {
+                    try {
+                        library = require(tsLintPath);
+                    } catch (e) {
+                        this.tslintPath2Library.set(tsLintPath, undefined);
+                        return;
+                    }
+                    this.tslintPath2Library.set(tsLintPath, { tslint: library, path: tsLintPath });
+                }
+                return this.tslintPath2Library.get(tsLintPath);
             }
-            return this.tslintPath2Library.get(tsLintPath);
         });
+    }
+
+    private getTsLintPaths(directory: string, packageManager: PackageManager | undefined) {
+        const globalPath = this.getGlobalPackageManagerPath(packageManager);
+
+        let workspaceTsLintPath: string | undefined;
+        try {
+            workspaceTsLintPath = this.resolveTsLint({ nodePath: undefined, cwd: directory }) || undefined;
+        } catch {
+            // noop
+        }
+
+        let globalTSLintPath: string | undefined;
+        try {
+            globalTSLintPath = this.resolveTsLint({ nodePath: undefined, cwd: globalPath });
+        } catch {
+            // noop
+        }
+        if (!globalTSLintPath) {
+            globalTSLintPath = this.resolveTsLint({ nodePath: globalPath, cwd: globalPath });
+        }
+        return { workspaceTsLintPath, globalTsLintPath: globalTSLintPath };
     }
 
     private getGlobalPackageManagerPath(packageManager: PackageManager = 'npm'): string | undefined {
@@ -193,7 +280,7 @@ export class TsLintRunner {
     private doRun(
         filePath: string,
         contents: string | typescript.Program,
-        library: typeof import('tslint'),
+        library: { tslint: typeof tslint, path: string },
         configuration: RunConfiguration,
         warnings: string[],
     ): RunResult {
@@ -210,7 +297,7 @@ export class TsLintRunner {
         }
 
         let cwdToRestore: string | undefined;
-        if (cwd) {
+        if (cwd && configuration.workspaceLibraryExecution === WorkspaceLibraryExecution.Allow) {
             this.traceMethod('doRun', `Changed directory to ${cwd}`);
             cwdToRestore = process.cwd();
             process.chdir(cwd);
@@ -221,7 +308,7 @@ export class TsLintRunner {
             let linterConfiguration: Configuration | undefined;
             this.traceMethod('doRun', 'About to getConfiguration');
             try {
-                linterConfiguration = this.getConfiguration(filePath, filePath, library, configFile);
+                linterConfiguration = this.getConfiguration(filePath, filePath, library.tslint, configFile);
             } catch (err) {
                 this.traceMethod('doRun', `No linting: exception when getting tslint configuration for ${filePath}, configFile= ${configFile}`);
                 warnings.push(getConfigurationFailureMessage(err));
@@ -253,10 +340,16 @@ export class TsLintRunner {
             }
 
             let result: tslint.LintResult;
+
+            const isTrustedWorkspace = configuration.workspaceLibraryExecution === WorkspaceLibraryExecution.Allow;
+
+            // Only allow using a custom rules directory if the workspace has been trusted by the user
+            const rulesDirectory = isTrustedWorkspace ? configuration.rulesDirectory : [];
+
             const options: tslint.ILinterOptions = {
                 formatter: "json",
                 fix: false,
-                rulesDirectory: configuration.rulesDirectory || undefined,
+                rulesDirectory,
                 formattersDirectory: undefined,
             };
             if (configuration.traceLevel && configuration.traceLevel === 'verbose') {
@@ -271,10 +364,16 @@ export class TsLintRunner {
             };
             console.warn = captureWarnings;
 
+            const sanitizedLintConfiguration = { ...linterConfiguration.linterConfiguration } as IConfigurationFile;
+            // Only allow using a custom rules directory if the workspace has been trusted by the user
+            if (!isTrustedWorkspace) {
+                sanitizedLintConfiguration.rulesDirectory = [];
+            }
+
             try { // clean up if tslint crashes
-                const linter = new library.Linter(options, typeof contents === 'string' ? undefined : contents);
+                const linter = new library.tslint.Linter(options, typeof contents === 'string' ? undefined : contents);
                 this.traceMethod('doRun', `Linting: start linting`);
-                linter.lint(filePath, typeof contents === 'string' ? contents : '', linterConfiguration.linterConfiguration);
+                linter.lint(filePath, typeof contents === 'string' ? contents : '', sanitizedLintConfiguration);
                 result = linter.getResult();
                 this.traceMethod('doRun', `Linting: ended linting`);
             } finally {
@@ -292,6 +391,21 @@ export class TsLintRunner {
                 process.chdir(cwdToRestore);
             }
         }
+    }
+
+    /**
+     * Check if `tslintPath` is next to the running TS version. This indicates that the user has
+     * implicitly trusted the workspace since they are already running TS from it.
+     */
+    private isWorkspaceImplicitlyTrusted(tslintPath: string): boolean {
+        const tsPath = process.argv[1];
+        const nodeModulesPath = join(tsPath, '..', '..', '..');
+
+        const rel = relative(nodeModulesPath, normalize(tslintPath));
+        if (rel === `tslint${sep}lib${sep}index.js`) {
+            return true;
+        }
+        return false;
     }
 
     private getConfiguration(uri: string, filePath: string, library: typeof tslint, configFileName: string | null): Configuration | undefined {
@@ -350,7 +464,7 @@ export class TsLintRunner {
         this.trace("tslint configuration:" + util.inspect(configuration, undefined, 4));
     }
 
-    private resolveTsLint(nodePath: string | undefined, cwd: string): string {
+    private resolveTsLint(options: { nodePath: string | undefined; cwd: string | undefined; }): string | undefined {
         const nodePathKey = 'NODE_PATH';
         const app = [
             "console.log(require.resolve('tslint'));",
@@ -359,17 +473,13 @@ export class TsLintRunner {
         const env = process.env;
         const newEnv = Object.create(null);
         Object.keys(env).forEach(key => newEnv[key] = env[key]);
-        if (nodePath) {
-            if (newEnv[nodePathKey]) {
-                newEnv[nodePathKey] = nodePath + delimiter + newEnv[nodePathKey];
-            } else {
-                newEnv[nodePathKey] = nodePath;
-            }
-            this.traceMethod('resolveTsLint', `NODE_PATH value is: ${newEnv[nodePathKey]}`);
+        if (options.nodePath) {
+            newEnv[nodePathKey] = options.nodePath;
         }
         newEnv.ELECTRON_RUN_AS_NODE = '1';
-        const spawnResults = cp.spawnSync(process.argv0, ['-e', app], { cwd, env: newEnv });
-        return spawnResults.stdout.toString().trim();
+
+        const spawnResults = cp.spawnSync(process.argv0, ['-e', app], { cwd: options.cwd, env: newEnv });
+        return spawnResults.stdout.toString().trim() || undefined;
     }
 }
 
@@ -404,6 +514,13 @@ function getInstallFailureMessage(filePath: string, packageManager: PackageManag
         `Failed to load the TSLint library for '${filePath}'`,
         `To use TSLint, please install tslint using \'${localCommands[packageManager]}\' or globally using \'${globalCommands[packageManager]}\'.`,
         'Be sure to restart your editor after installing tslint.',
+    ].join('\n');
+}
+
+function getWorkspaceNotTrustedMessage(filePath: string) {
+    return [
+        `Not using the local TSLint version found for '${filePath}'`,
+        'To enable code execution from the current workspace you must enable workspace library execution.',
     ].join('\n');
 }
 

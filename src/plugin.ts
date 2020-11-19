@@ -4,7 +4,7 @@ import * as ts_module from 'typescript/lib/tsserverlibrary';
 import { TSLINT_ERROR_CODE, TSLINT_ERROR_SOURCE } from './config';
 import { ConfigFileWatcher } from './configFileWatcher';
 import { Logger } from './logger';
-import { RunResult, TsLintRunner, toPackageManager } from './runner';
+import { RunResult, TsLintRunner, toPackageManager, WorkspaceLibraryExecution } from './runner';
 import { ConfigurationManager } from './settings';
 import { getNonOverlappingReplacements, filterProblemsForFile, getReplacements } from './runner/failures';
 
@@ -52,7 +52,10 @@ class ProblemMap {
 export class TSLintPlugin {
     private readonly codeFixActions = new Map<string, ProblemMap>();
     private readonly configFileWatcher: ConfigFileWatcher;
-    private readonly runner: TsLintRunner;
+
+    private runner: TsLintRunner;
+
+    private workspaceTrust = WorkspaceLibraryExecution.Unknown;
 
     public constructor(
         private readonly ts: typeof ts_module,
@@ -118,6 +121,13 @@ export class TSLintPlugin {
         });
     }
 
+    public updateWorkspaceTrust(workspaceTrust: WorkspaceLibraryExecution) {
+        this.workspaceTrust = workspaceTrust;
+
+        // Reset the runner
+        this.runner = new TsLintRunner(message => { this.logger.info(message); });
+    }
+
     private getSemanticDiagnostics(
         delegate: (fileName: string) => ts_module.Diagnostic[],
         fileName: string,
@@ -150,6 +160,7 @@ export class TSLintPlugin {
                         ? Array.isArray(config.exclude) ? config.exclude : [config.exclude]
                         : [],
                     packageManager: toPackageManager(config.packageManager),
+                    workspaceLibraryExecution: this.workspaceTrust,
                 });
                 if (result.configFilePath) {
                     this.configFileWatcher.ensureWatching(result.configFilePath);

@@ -10,9 +10,9 @@ TypeScript [language service plugin](https://blogs.msdn.microsoft.com/typescript
 
 To use the plugin:
 
-* Install TSLint 5+ in your workspace or globally.
+* Install TSLint 5+ in your workspace or globally (if you are using a local TSLint, see [workspace library execution](#workspace-library-execution))
 
-* Install the plugin with `npm install typescript-tslint-plugin`
+* Install the plugin with `npm install typescript-tslint-plugin` 
 
 * Enable the plugin in your `tsconfig.json` file:
 
@@ -27,6 +27,20 @@ To use the plugin:
     ```
 
 See [editor support](#editor-support) for more detailed setup instructions.
+
+## Workspace Library Execution
+
+By default this plugin will not load TSLint or custom rules from the workspace if you are using a global version of TypeScript. This is done for security reasons. The plugin always allows using the global version of TSLint.
+
+To use enable using a local TSLint install and custom rules from the workspace, you must either:
+
+- Use a workspace version of TypeScript that is installed alongside TSLint.
+
+- Enable workspace library execution in your editor of choice. This must be done through an editor and cannot be configured in a `tsconfig`.
+
+    In VS Code for example, you can run the `TSLint: Manage Workspace Library Execution` command to enable using the TSLint for the current workspace or for all workspaces.
+
+- Set a `TS_TSLINT_ENABLE_WORKSPACE_LIBRARY_EXECUTION=1` environment variable and make sure the TypeScript server is run in an environment where this variable is set to true.
 
 ## Configuration options
 

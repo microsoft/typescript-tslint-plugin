@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import * as fs from 'fs';
 import 'mocha';
 import * as path from 'path';
-import { RunConfiguration, TsLintRunner } from '../index';
+import { RunConfiguration, TsLintRunner, WorkspaceLibraryExecution } from '../index';
 import { getNonOverlappingReplacements, filterProblemsForFile } from '../failures';
 
 const testDataRoot = path.join(__dirname, '..', '..', '..', 'test-data');
@@ -11,6 +11,7 @@ const defaultRunConfiguration: RunConfiguration = {
     exclude: [],
     jsEnable: false,
     ignoreDefinitionFiles: true,
+    workspaceLibraryExecution: WorkspaceLibraryExecution.Unknown
 };
 
 describe('TSLintRunner', () => {

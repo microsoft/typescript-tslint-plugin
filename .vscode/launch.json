@@ -6,18 +6,12 @@
     "configurations": [
         {
             "type": "node",
-            "request": "launch",
-            "name": "Mocha Tests",
-            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
-            "args": [
-                "-u",
-                "tdd",
-                "--timeout",
-                "999999",
-                "--colors",
-                "${workspaceFolder}/out/runner/test"
-            ],
-            "internalConsoleOptions": "openOnSessionStart"
+            "request": "attach",
+            "name": "Attach",
+            "port": 9999,
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
         }
     ]
 }

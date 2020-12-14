@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.1 - December 14, 2020
+- Catch error when resolving global tslint fails. Thanks @nickjs!
+
 ## 1.0.0 - November 30, 2020
 - Restricts when tslint is loaded from the workspace.
     - Global TSLint versions can always be loaded.

@@ -249,13 +249,12 @@ export class TsLintRunner {
 
         let globalTSLintPath: string | undefined;
         try {
-            globalTSLintPath = this.resolveTsLint({ nodePath: undefined, cwd: globalPath });
+            globalTSLintPath = this.resolveTsLint({ nodePath: undefined, cwd: globalPath })
+                || this.resolveTsLint({ nodePath: globalPath, cwd: globalPath });
         } catch {
             // noop
         }
-        if (!globalTSLintPath) {
-            globalTSLintPath = this.resolveTsLint({ nodePath: globalPath, cwd: globalPath });
-        }
+
         return { workspaceTsLintPath, globalTsLintPath: globalTSLintPath };
     }
 

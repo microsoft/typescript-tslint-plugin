@@ -4,7 +4,7 @@
 - Catch error when resolving global tslint fails. Thanks @nickjs!
 
 ## 1.0.0 - November 30, 2020
-- Restricts when tslint is loaded from the workspace.
+- Restricts when tslint is loaded from the workspace. This fix was made in response to [CVE-2020-17150](https://msrc.microsoft.com/update-guide/vulnerability/CVE-2020-17150).
     - Global TSLint versions can always be loaded.
     - TSLint versions installed next to the plugin can always be loaded.
     - Otherwise, the consumer of the plugin must use `onConfigurationChanged` and explicitly enable `allowWorkspaceLibraryExecution`.

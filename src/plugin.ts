@@ -134,6 +134,11 @@ export class TSLintPlugin {
     ): ts_module.Diagnostic[] {
         const diagnostics = delegate(fileName);
 
+        if (isInMemoryFile(fileName)) {
+            // In-memory file. TS-lint crashes on these so ignore them
+            return diagnostics;
+        }
+
         const config = this.configurationManager.config;
         if (diagnostics.length > 0 && config.suppressWhileTypeErrorsPresent) {
             return diagnostics;
@@ -225,6 +230,10 @@ export class TSLintPlugin {
         userPreferences: ts.UserPreferences
     ): ReadonlyArray<ts.CodeFixAction> {
         const fixes = Array.from(delegate(fileName, start, end, errorCodes, formatOptions, userPreferences));
+
+        if (isInMemoryFile(fileName)) {
+            return fixes; // We don't have any tslint errors for these files
+        }
 
         if (this.configurationManager.config.suppressWhileTypeErrorsPresent && fixes.length > 0) {
             return fixes;
@@ -402,6 +411,10 @@ export class TSLintPlugin {
         }
         return this.ts.DiagnosticCategory.Warning;
     }
+}
+
+function isInMemoryFile(fileName: string) {
+    return fileName.startsWith('^');
 }
 
 function convertReplacementToTextChange(repl: tslint.Replacement): ts_module.TextChange {

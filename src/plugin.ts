@@ -165,7 +165,7 @@ export class TSLintPlugin {
                 if (result.configFilePath) {
                     this.configFileWatcher.ensureWatching(result.configFilePath);
                 }
-            } catch (err) {
+            } catch (err: any) {
                 let errorMessage = `unknown error`;
                 if (typeof err.message === 'string' || err.message instanceof String) {
                     errorMessage = err.message as string;
@@ -207,7 +207,7 @@ export class TSLintPlugin {
                 diagnostics.push(this.makeDiagnostic(problem, file));
                 this.recordCodeAction(problem, file);
             }
-        } catch (e) {
+        } catch (e: any) {
             this.logger.info(`tslint-language service error: ${e.toString()}`);
             this.logger.info(`Stack trace: ${e.stack}`);
         }

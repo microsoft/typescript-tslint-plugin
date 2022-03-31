@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2 - March 31, 2022
+- Deprecate package as eslint is now preferred for TypeScript linting.
+- Try ignoring in-memory files which can crash tslint.
+
 ## 1.0.1 - December 14, 2020
 - Catch error when resolving global tslint fails. Thanks @nickjs!
 

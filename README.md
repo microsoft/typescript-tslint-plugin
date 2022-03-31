@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/Microsoft/typescript-tslint-plugin.svg?branch=master)](https://travis-ci.org/Microsoft/typescript-tslint-plugin)
 
-> **❗IMPORTANT**: TSLint [has been deprecated](https://medium.com/palantir/tslint-in-2019-1a144c2317a9) in favor of ESLint.
+> **❗IMPORTANT**: TSLint [has been deprecated](https://medium.com/palantir/tslint-in-2019-1a144c2317a9) in favor of ESLint and this plug-in has also been deprecated in favor of eslint.
 >
 > Please look into [migrating your projects to ESLint](https://github.com/typescript-eslint/typescript-eslint#typescript-eslint).
 
